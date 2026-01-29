@@ -6,7 +6,7 @@
 ![Status](https://img.shields.io/badge/Status-In%20Development-orange)
 
 A comprehensive, self-hosted DevOps platform for small remote teams, built entirely with free and open-source software. Designed as a final year project for a **Microcomputer Systems and Networks (SMR)** vocational training course.
-
+- Hola Mundo!
 ## 🌟 Features
 
 ### 🏗️ **Core Infrastructure**
