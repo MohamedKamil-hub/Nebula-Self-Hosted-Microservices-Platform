@@ -1,0 +1,62 @@
+@startuml
+' === CONFIGURACIÓN DE ESTILO COMPATIBLE ===
+skinparam handwritten false
+skinparam shadowing true
+skinparam roundcorner 10
+skinparam DefaultFontName Arial
+skinparam DefaultFontSize 12
+
+' Colores base
+skinparam nodeBackgroundColor #F8F9F9
+skinparam nodeBorderColor #2E86C1
+skinparam rectangleBackgroundColor #EBF5FB
+skinparam rectangleBorderColor #326CE5
+skinparam databaseBackgroundColor #FADBD8
+
+title 🚀 Evolución NEBULA: Arquitectura K3s (Vertical)
+
+' === ACTOR ===
+actor "Desarrollador\n(Remoto)" as User
+
+' === INFRAESTRUCTURA ===
+node "Servidor NEBULA (Ubuntu)" {
+
+    rectangle "Cluster K3s" {
+        
+        ' Entrada
+        rectangle "Ingress Controller\n(Punto de Entrada)" as Ingress #D6EAF8
+        
+        ' Aplicaciones
+        rectangle "Pods de Aplicación" {
+            rectangle "Web Static" as Web #FCF3CF
+            rectangle "API REST\n(Auto-escalable)" as API #D5F5E3
+            database "PostgreSQL\n(Persistente)" as DB
+        }
+        
+        ' Lógica de escalado
+        rectangle "HPA (Autoscaler)" as HPA #FEF9E7
+    }
+}
+
+' === FLUJO VERTICAL ===
+User -down-> Ingress : "1. Acceso HTTPS"
+
+Ingress -down-> Web : "Enruta"
+Ingress -down-> API : "Enruta"
+
+API -down-> DB : "Consulta/Guarda"
+
+' Relación de monitoreo y escalado
+HPA .left.> API : "2. Monitorea CPU"
+HPA .down.> API : "3. Escala Instancias"
+
+note right of HPA
+  Si la carga sube, K3s 
+  crea automáticamente 
+  más copias de la API.
+end note
+
+@enduml
+
+
+

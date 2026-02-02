@@ -1,0 +1,159 @@
+@startuml
+' === CONFIGURACIÓN VISUAL (ESTILO NEBULA) ===
+skinparam handwritten false
+skinparam shadowing true
+skinparam defaultFontName Arial
+skinparam roundcorner 10
+
+' Colores de las líneas y flechas
+skinparam arrowColor #555555
+skinparam arrowThickness 1.5
+
+' Estilos específicos por partición (Swimlanes)
+skinparam partition {
+    BackgroundColor<<Dev>> #F0F8FF
+    BackgroundColor<<Cloud>> #F5EEF8
+    BackgroundColor<<Server>> #E8F8F5
+    BorderColor Gray
+    FontColor Black
+    FontSize 14
+    FontStyle Bold
+}
+
+' Estilos de las actividades (Cajas)
+skinparam activity {
+    BackgroundColor White
+    BorderColor #2C3E50
+    FontSize 13
+    
+    ' Estilo específico para pasos críticos
+    BackgroundColor<<Critical>> #D5F5E3
+    BorderColor<<Critical>> #196F3D
+    
+    ' Estilo para error
+    BackgroundColor<<Error>> #FADBD8
+    BorderColor<<Error>> #943126
+}
+
+title 🚀 Flujo de Automatización CI/CD - Proyecto NEBULA
+
+' === INICIO DEL FLUJO ===
+
+partition "💻 Entorno Local" <<Dev>> {
+    start
+    :📝 Escribir Código;
+    :⚡ **git push** a repositorio;
+}
+
+partition "☁️ GitHub (CI/CD)" <<Cloud>> {
+    :👀 Webhook detecta cambios;
+    :⚙️ Iniciar GitHub Actions;
+    :🐳 Build de Imagen Docker;
+
+    if (**¿Compilación Exitosa?**) then (✅ Sí)
+        :📦 Subir Imagen al Registry;
+        :🔑 Conexión SSH segura al Servidor;
+    else (❌ No)
+        :🛑 **Notificar Error**;
+        note right: Envía email o alerta\nal desarrollador
+        detach
+    endif
+}
+
+partition "🖥️ Servidor NEBULA (Ubuntu)" <<Server>> {
+    :📥 Pull (Descargar) nueva imagen;
+    
+    :🔄 **Docker Compose Up**\n(Recrear contenedores);
+    
+    ' Ejecución paralela
+    fork
+        :🌐 Actualizar Nginx Proxy;
+    fork again
+        :📊 Registrar métricas en Prometheus;
+    end fork
+    
+    :✅ **App Desplegada y Online**;
+}
+
+stop
+
+@enduml@startuml
+' === CONFIGURACIÓN VISUAL (ESTILO NEBULA) ===
+skinparam handwritten false
+skinparam shadowing true
+skinparam defaultFontName Arial
+skinparam roundcorner 10
+
+' Colores de las líneas y flechas
+skinparam arrowColor #555555
+skinparam arrowThickness 1.5
+
+' Estilos específicos por partición (Swimlanes)
+skinparam partition {
+    BackgroundColor<<Dev>> #F0F8FF
+    BackgroundColor<<Cloud>> #F5EEF8
+    BackgroundColor<<Server>> #E8F8F5
+    BorderColor Gray
+    FontColor Black
+    FontSize 14
+    FontStyle Bold
+}
+
+' Estilos de las actividades (Cajas)
+skinparam activity {
+    BackgroundColor White
+    BorderColor #2C3E50
+    FontSize 13
+    
+    ' Estilo específico para pasos críticos
+    BackgroundColor<<Critical>> #D5F5E3
+    BorderColor<<Critical>> #196F3D
+    
+    ' Estilo para error
+    BackgroundColor<<Error>> #FADBD8
+    BorderColor<<Error>> #943126
+}
+
+title 🚀 Flujo de Automatización CI/CD - Proyecto NEBULA
+
+' === INICIO DEL FLUJO ===
+
+partition "💻 Entorno Local" <<Dev>> {
+    start
+    :📝 Escribir Código;
+    :⚡ **git push** a repositorio;
+}
+
+partition "☁️ GitHub (CI/CD)" <<Cloud>> {
+    :👀 Webhook detecta cambios;
+    :⚙️ Iniciar GitHub Actions;
+    :🐳 Build de Imagen Docker;
+
+    if (**¿Compilación Exitosa?**) then (✅ Sí)
+        :📦 Subir Imagen al Registry;
+        :🔑 Conexión SSH segura al Servidor;
+    else (❌ No)
+        :🛑 **Notificar Error**;
+        note right: Envía email o alerta\nal desarrollador
+        detach
+    endif
+}
+
+partition "🖥️ Servidor NEBULA (Ubuntu)" <<Server>> {
+    :📥 Pull (Descargar) nueva imagen;
+    
+    :🔄 **Docker Compose Up**\n(Recrear contenedores);
+    
+    ' Ejecución paralela
+    fork
+        :🌐 Actualizar Nginx Proxy;
+    fork again
+        :📊 Registrar métricas en Prometheus;
+    end fork
+    
+    :✅ **App Desplegada y Online**;
+}
+
+stop
+
+@enduml

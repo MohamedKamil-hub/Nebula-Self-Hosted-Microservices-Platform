@@ -1,0 +1,147 @@
+@startuml
+' CONFIGURACIÓN DE ESTILO (The Pretty Part)
+skinparam handwritten false
+skinparam shadowing true
+skinparam usecase {
+    BackgroundColor White
+    BorderColor #2C3E50
+    ArrowColor #2C3E50
+    FontName Arial
+}
+skinparam actor {
+    BackgroundColor #34495E
+    BorderColor #2C3E50
+    FontName Arial
+    FontColor Black
+}
+skinparam package {
+    BackgroundColor #ECF0F1
+    BorderColor #2980B9
+    FontColor #2980B9
+    FontName Arial Bold
+}
+skinparam note {
+    BackgroundColor #FEF9E7
+    BorderColor #D4AC0D
+}
+
+' ORIENTACIÓN Y TÍTULO
+left to right direction
+title Diagrama de Casos de Uso - Proyecto NEBULA
+
+' ACTORES
+actor "Desarrollador\n(Usuario Remoto)" as Dev
+actor "Administrador\n(Gestor Infraestructura)" as Admin
+
+' SISTEMA
+package "Plataforma NEBULA" {
+
+    ' Casos de Uso del Desarrollador
+    usecase "Desplegar App\n(vía CI/CD GitHub)" as UC_Deploy
+    usecase "Acceder a Apps\n(HTTPS Seguro)" as UC_Access
+    
+    ' Caso de Uso Incluido (Interno)
+    usecase "Ejecutar Contenedores\n(Web, API, DB)" as UC_Run
+
+    ' Casos de Uso del Administrador
+    usecase "Monitorizar Sistema\n(Grafana/Prometheus)" as UC_Monitor
+    usecase "Configurar Seguridad\n(SSH / Fail2Ban)" as UC_Sec
+    usecase "Realizar Backups\n(Configs & Datos)" as UC_Backup
+}
+
+' RELACIONES
+Dev --> UC_Deploy
+Dev --> UC_Access
+
+Admin --> UC_Monitor
+Admin --> UC_Sec
+Admin --> UC_Backup
+
+' RELACIONES INTERNAS (INCLUDES/EXTENDS)
+UC_Deploy ..> UC_Run : <<include>>
+
+' NOTAS DE CONTEXTO (Opcional, para dar detalle del proyecto)
+note right of UC_Deploy
+  Trigger: git push
+  Acción: GitHub Actions
+end note
+
+note bottom of UC_Access
+  Certificados SSL
+  (Let's Encrypt)
+end note
+
+@enduml@startuml
+' CONFIGURACIÓN DE ESTILO (The Pretty Part)
+skinparam handwritten false
+skinparam shadowing true
+skinparam usecase {
+    BackgroundColor White
+    BorderColor #2C3E50
+    ArrowColor #2C3E50
+    FontName Arial
+}
+skinparam actor {
+    BackgroundColor #34495E
+    BorderColor #2C3E50
+    FontName Arial
+    FontColor Black
+}
+skinparam package {
+    BackgroundColor #ECF0F1
+    BorderColor #2980B9
+    FontColor #2980B9
+    FontName Arial Bold
+}
+skinparam note {
+    BackgroundColor #FEF9E7
+    BorderColor #D4AC0D
+}
+
+' ORIENTACIÓN Y TÍTULO
+left to right direction
+title Diagrama de Casos de Uso - Proyecto NEBULA
+
+' ACTORES
+actor "Desarrollador\n(Usuario Remoto)" as Dev
+actor "Administrador\n(Gestor Infraestructura)" as Admin
+
+' SISTEMA
+package "Plataforma NEBULA" {
+
+    ' Casos de Uso del Desarrollador
+    usecase "Desplegar App\n(vía CI/CD GitHub)" as UC_Deploy
+    usecase "Acceder a Apps\n(HTTPS Seguro)" as UC_Access
+    
+    ' Caso de Uso Incluido (Interno)
+    usecase "Ejecutar Contenedores\n(Web, API, DB)" as UC_Run
+
+    ' Casos de Uso del Administrador
+    usecase "Monitorizar Sistema\n(Grafana/Prometheus)" as UC_Monitor
+    usecase "Configurar Seguridad\n(SSH / Fail2Ban)" as UC_Sec
+    usecase "Realizar Backups\n(Configs & Datos)" as UC_Backup
+}
+
+' RELACIONES
+Dev --> UC_Deploy
+Dev --> UC_Access
+
+Admin --> UC_Monitor
+Admin --> UC_Sec
+Admin --> UC_Backup
+
+' RELACIONES INTERNAS (INCLUDES/EXTENDS)
+UC_Deploy ..> UC_Run : <<include>>
+
+' NOTAS DE CONTEXTO (Opcional, para dar detalle del proyecto)
+note right of UC_Deploy
+  Trigger: git push
+  Acción: GitHub Actions
+end note
+
+note bottom of UC_Access
+  Certificados SSL
+  (Let's Encrypt)
+end note
+
+@enduml
