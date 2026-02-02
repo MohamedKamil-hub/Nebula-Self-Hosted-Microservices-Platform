@@ -1,0 +1,19 @@
+# Variables de entorno
+.env
+*.env.local
+
+# Claves SSH y certificados
+*.pem
+*.key
+*.crt
+
+# Logs y datos de contenedores
+*.log
+data/
+**/node_modules/
+
+# Editor y sistema
+.DS_Store
+.vscode/
+__pycache__/
+*.swp
