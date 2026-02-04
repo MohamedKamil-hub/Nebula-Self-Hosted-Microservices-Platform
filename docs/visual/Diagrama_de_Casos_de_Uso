@@ -1,4 +1,3 @@
-
 @startuml
 ' === CONFIGURACIÓN DE ESTILO ===
 skinparam handwritten false
