@@ -1,0 +1,46 @@
+###############################################################################
+# NEBULA PROJECT - Hardened SSH Configuration
+# User: nebula-mohamed-kamil
+# Location: /etc/ssh/sshd_config
+###############################################################################
+
+# --- Network Settings ---
+Port 2222
+ListenAddress 0.0.0.0
+Protocol 2
+
+# --- Security & Authentication ---
+LoginGraceTime 2m
+StrictModes yes
+MaxAuthTries 3
+MaxSessions 3
+
+# Acceso exclusivo al usuario del proyecto
+AllowUsers nebula-mohamed-kamil
+
+# Bloqueo total de accesos inseguros
+PermitRootLogin no
+PermitEmptyPasswords no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+ChallengeResponseAuthentication no
+
+# Autenticación criptográfica (Solo llaves)
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+
+# --- Eficiencia y Gestión de Recursos ---
+# Desconecta sesiones inactivas tras 10 min de inactividad total
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+# --- Operational Settings ---
+UsePAM yes
+X11Forwarding no
+PrintMotd no
+AcceptEnv LANG LC_*
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+###############################################################################
+# End of NEBULA Hardening
+###############################################################################
