@@ -30,7 +30,7 @@ services:
     image: netdata/netdata:latest
     container_name: nebula-monitor
     restart: unless-stopped
-    privileged: true  # He añadido esta línea para que no te dé el error de conexión que tenías
+    privileged: true  # asi no da error de conexion
     ports:
       - '19999:19999'
     volumes:
