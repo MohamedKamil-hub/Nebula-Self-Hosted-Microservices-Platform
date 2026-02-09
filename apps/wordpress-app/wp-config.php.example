@@ -1,5 +1,4 @@
 <?php
-/** Configuración NEBULA definitiva */
 // Esto le dice a WordPress que ignore lo que diga el proxy y crea que está en el puerto 10443
 $_SERVER['HTTP_HOST'] = 'wordpress.nebula.test:10443';
 $_SERVER['SERVER_NAME'] = 'wordpress.nebula.test';
@@ -10,7 +9,6 @@ define('WP_HOME', 'https://wordpress.nebula.test:10443');
 define('WP_SITEURL', 'https://wordpress.nebula.test:10443');
 define('FORCE_SSL_ADMIN', true);
 
-/** El resto de tu configuración (DB, etc) se queda igual abajo... */
 /** El resto es lo estándar de Docker */
 define( 'DB_NAME', 'wordpress' );
 define( 'DB_USER', 'wordpress' );

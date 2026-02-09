@@ -1,25 +1,30 @@
 #!/bin/bash
-# Definir la ruta base del proyecto de forma absoluta
-BASE_DIR="/home/nebula-mohamed-kamil/proyecto_intermodular/nebula-selfhosted-paas"
-BACKUP_PATH="$BASE_DIR/backups/$(date +%Y%m%d_%H%M)"
+# backup-nebula.sh - generic backup for nebula
 
-# Crear carpeta de backup
+# automatically detect route
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BASE_DIR="${SCRIPT_DIR}"
+BACKUP_PATH="${BASE_DIR}/backups/$(date +%Y%m%d_%H%M%S)"
+
+
 mkdir -p "$BACKUP_PATH"
 
-echo "--- Iniciando Backup de NEBULA ---"
+echo "--- Initiating NEBULA backup---"
+echo "base directory: $BASE_DIR"
+echo "backup path: $BACKUP_PATH"
 
-# 1. Configuración del Sistema (UFW y SSH)
-echo "[1/3] Respaldando configuraciones de red y acceso..."
+# 1. System configuration (UFW y SSH)
+echo "[1/3] backing up access and network configurations..."
 sudo tar -czf "$BACKUP_PATH/system_config.tar.gz" /etc/ssh /etc/fail2ban /etc/ufw 2>/dev/null
 
-# 2. Datos de Docker (NPM, Bases de datos, WordPress)
-echo "[2/3] Comprimiendo volúmenes de Docker..."
+# 2. Docker data (NPM, Bases de datos, WordPress)
+echo "[2/3] Compressing Docker volumes..."
 tar -czf "$BACKUP_PATH/docker_data.tar.gz" -C "$BASE_DIR" data/
 
-# 3. Ajustar permisos (para que tu usuario pueda gestionar el backup)
+# 3. Adjusting permissions (so u can manage the backup)
 sudo chown -R $USER:$USER "$BACKUP_PATH"
 
-# Opcional: Borrar backups con más de 7 días para ahorrar espacio
+# OPTIONAL: deletes backups that are older than 7 days to save disk space
 find "$BASE_DIR/backups/" -type d -mtime +7 -exec rm -rf {} \; 2>/dev/null
 
 echo "--- Backup completado con éxito en $BACKUP_PATH ---"
