@@ -1,5 +1,5 @@
 # .github/workflows/ci-cd-demo.yml
-name: CI/CD Demo
+name: CI/CD NebulaMKK
 on: [push]
 
 jobs:
