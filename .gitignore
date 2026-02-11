@@ -19,7 +19,10 @@ data/
 __pycache__/
 *.swp
 
-
+certs/
+data/letsencrypt/accounts/
+apps/wordpress-app/wp-content/upgrade/
+apps/wordpress-app/wp-content/cache/
 
 # Ignorar bases de datos persistentes de las apps
 apps/wordpress-app/mysql/

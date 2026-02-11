@@ -1,13 +1,12 @@
 #!/bin/bash
 # setup-nebula.sh - Simple and secure setup for Nebula PaaS
-# KISS (Keep It Simple, Stupid)
 
 echo "=== NEBULA PAAS - System Check ==="
 echo ""
 
 # 1. Check that we are in the correct location
 if [ ! -f "docker-compose.yml" ]; then
-    echo "❌ ERROR: Run this from ~/proyecto_intermodular/nebula-selfhosted-paas/"
+    echo "❌ ERROR: Run this from ~/nebula-selfhosted-paas/"
     exit 1
 fi
 
@@ -16,7 +15,7 @@ echo "✓ Correct directory: $(pwd)"
 # 2. Check Docker
 if ! command -v docker &> /dev/null; then
     echo "❌ ERROR: Docker is not installed."
-    echo "   First run: ./scripts/installation-docker-nebula.sh"
+    echo "   First run: ./scripts/01-install-docker.sh"
     exit 1
 fi
 echo "✓ Docker installed"
@@ -73,7 +72,7 @@ case $option in
             echo "✓ Network already exists"
         fi
         ;;
-    
+
     2)
         # Copy certificates if missing
         if [ -f "certs/nebula.crt" ] && [ -f "certs/nebula.key" ]; then
@@ -88,7 +87,7 @@ case $option in
             echo "❌ No certificates in certs/ to copy"
         fi
         ;;
-    
+
     3)
         # Network
         if ! docker network ls | grep -q nebula-network; then
@@ -97,7 +96,7 @@ case $option in
         else
             echo "✓ Network already exists"
         fi
-        
+
         # Certificates
         if [ -f "certs/nebula.crt" ] && [ -f "certs/nebula.key" ]; then
             if [ ! -f "data/npm/ssl/nebula.crt" ] || [ ! -f "data/npm/ssl/nebula.key" ]; then
@@ -111,12 +110,12 @@ case $option in
             echo "⚠️  No certificates in certs/ to copy"
         fi
         ;;
-    
+
     4)
         echo "Exiting..."
         exit 0
         ;;
-    
+
     *)
         echo "❌ Invalid option"
         exit 1
@@ -136,5 +135,5 @@ echo "  User: admin@example.com"
 echo "  Password: changeme"
 echo ""
 echo "Other available scripts:"
-echo "  ./scripts/setup-firewall-nebula.sh  # Setup firewall"
-echo "  ./scripts/backup-nebula.sh          # Make backup"
+echo "  ./scripts/05-setup-firewall.sh  # Setup firewall"
+echo "  ./scripts/99-backup.sh          # Make backup"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# backup-nebula.sh - generic backup for nebula
+# ./scripts/99-backup.sh - generic backup for nebula
 
 # automatically detect route
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

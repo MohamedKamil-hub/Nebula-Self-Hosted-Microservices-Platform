@@ -1,5 +1,5 @@
 #!/bin/bash
-# scripts/setup-firewall-nebula.sh
+# ./scripts/05-setup-firewall.sh
 # NEBULA - Firewall Configuration Script
 
 echo "=== NEBULA FIREWALL CONFIGURATION ==="
