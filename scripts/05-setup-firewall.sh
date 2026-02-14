@@ -26,8 +26,8 @@ sudo ufw allow 81/tcp comment 'Nginx Proxy Manager admin'
 sudo ufw --force enable
 
 echo "------------------------------------------------"
-echo "✅ Firewall configured and enabled."
-echo ""
+echo " Firewall configured and enabled."
+echo "                                "
 echo "PORTS OPENED:"
 echo "  • 2222/tcp  - SSH (rate limited)"
 echo "  • 80/tcp    - HTTP"
@@ -36,8 +36,8 @@ echo "  • 10443/tcp - HTTPS alternative (Windows/WSL2 compatibility)"
 echo "  • 19999/tcp - Netdata monitoring"
 echo "  • 81/tcp    - NPM admin panel"
 echo ""
-echo "⚠️  CAUTION: SSH has rate limiting (6 tries/30s)"
-echo "💡 For development: 'sudo ufw allow 2222/tcp' removes limit"
+echo " ! CAUTION: SSH has rate limiting (6 tries/30s)"
+echo "For development: 'sudo ufw allow 2222/tcp' removes limit"
 echo "------------------------------------------------"
 
 sudo ufw status verbose

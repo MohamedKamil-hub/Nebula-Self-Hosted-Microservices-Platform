@@ -24,9 +24,9 @@ sudo docker compose version
 sudo usermod -aG docker $USER
 
 echo "====================================================="
-echo "✅ Docker installed successfully!"
+echo "Docker installed successfully!"
 echo ""
-echo "⚠️  IMPORTANT: You must LOG OUT and LOG BACK IN"
+echo "⚠️ ! IMPORTANT: You must LOG OUT and LOG BACK IN"
 echo "   for the Docker group changes to take effect."
 echo ""
 echo "   After logging in again, verify with: docker ps"

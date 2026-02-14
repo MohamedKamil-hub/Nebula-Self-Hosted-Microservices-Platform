@@ -43,10 +43,10 @@ sudo systemctl enable --now fail2ban
 # 6. Give it a moment, then show status
 sleep 3
 sudo fail2ban-client status
-sudo fail2ban-client status sshd || echo "⚠️  SSH jail not yet active (check logs)"
-sudo fail2ban-client status nginx-http-auth || echo "⚠️  Nginx jail not yet active (install Nginx first?)"
+sudo fail2ban-client status sshd || echo "SSH jail not yet active (check logs)"
+sudo fail2ban-client status nginx-http-auth || echo " Nginx jail not yet active (install Nginx first?)"
 
 echo "------------------------------------------------"
-echo "✅ Fail2Ban configured and active."
-echo "🛡️  SSH (2222) and Nginx are now protected."
+echo " Fail2Ban configured and active."
+echo " SSH (2222) and Nginx are now protected."
 echo "------------------------------------------------"

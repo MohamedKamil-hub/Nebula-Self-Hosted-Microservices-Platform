@@ -6,7 +6,7 @@ echo ""
 
 # 1. Check that we are in the correct location
 if [ ! -f "docker-compose.yml" ]; then
-    echo "❌ ERROR: Run this from ~/nebula-selfhosted-paas/"
+    echo " ERROR: Run this from ~/nebula-selfhosted-paas/"
     exit 1
 fi
 
@@ -14,7 +14,7 @@ echo "✓ Correct directory: $(pwd)"
 
 # 2. Check Docker
 if ! command -v docker &> /dev/null; then
-    echo "❌ ERROR: Docker is not installed."
+    echo " ERROR: Docker is not installed."
     echo "   First run: ./scripts/01-install-docker.sh"
     exit 1
 fi
@@ -84,7 +84,7 @@ case $option in
                 echo "✓ Certificates already exist in data/npm/ssl/"
             fi
         else
-            echo "❌ No certificates in certs/ to copy"
+            echo " No certificates in certs/ to copy"
         fi
         ;;
 
@@ -107,7 +107,7 @@ case $option in
                 echo "✓ Certificates already exist in data/npm/ssl/"
             fi
         else
-            echo "⚠️  No certificates in certs/ to copy"
+            echo " No certificates in certs/ to copy"
         fi
         ;;
 
@@ -117,7 +117,7 @@ case $option in
         ;;
 
     *)
-        echo "❌ Invalid option"
+        echo " Invalid option"
         exit 1
         ;;
 esac
