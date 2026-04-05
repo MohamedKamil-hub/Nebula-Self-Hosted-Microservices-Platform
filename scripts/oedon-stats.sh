@@ -10,11 +10,15 @@ B='\033[0;34m'   P='\033[0;35m'   C='\033[0;36m'
 W='\033[1;37m'   DIM='\033[2m'    NC='\033[0m'
 
 # ── Detect project root & load .env ─────────────────────
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Resolvemos la ruta real aunque estemos en un symlink (MOTD)
+SCRIPT_PATH="$(readlink -f "$0")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
 [ -f "${PROJECT_DIR}/.env" ] && source "${PROJECT_DIR}/.env"
 DOMAIN="${DOMAIN:-oedon.test}"
 SITES_DIR="${PROJECT_DIR}/config/nginx/sites-enabled"
+
 
 # ── Helpers ─────────────────────────────────────────────
 bar() {
