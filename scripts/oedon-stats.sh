@@ -1,7 +1,6 @@
 #!/bin/bash
 # oedon-stats.sh - Oedon Server Dashboard
 # Author: Mohamed Kamil El Kouarti
-# Replaces: netdata container + 99-stats.sh
 
 set -euo pipefail
 
@@ -9,6 +8,13 @@ set -euo pipefail
 R='\033[0;31m'   G='\033[0;32m'   Y='\033[1;33m'
 B='\033[0;34m'   P='\033[0;35m'   C='\033[0;36m'
 W='\033[1;37m'   DIM='\033[2m'    NC='\033[0m'
+
+# ── Detect project root & load .env ─────────────────────
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+[ -f "${PROJECT_DIR}/.env" ] && source "${PROJECT_DIR}/.env"
+DOMAIN="${DOMAIN:-oedon.test}"
+SITES_DIR="${PROJECT_DIR}/config/nginx/sites-enabled"
 
 # ── Helpers ─────────────────────────────────────────────
 bar() {
@@ -79,44 +85,52 @@ else
     DOCKER_PS=""
 fi
 
-# ── Failed Logins ───────────────────────────────────────
-FAILED_SSH=""
-for log in /var/log/auth.log /var/log/secure; do
-    [ -f "$log" ] && FAILED_SSH=$(grep -c "Failed password" "$log" 2>/dev/null || echo 0) && break
+# ── Failed Logins (auto-detect log) ────────────────────
+FAILED_SSH="0"
+for log in /var/log/auth.log /var/log/secure /var/log/messages; do
+    if [ -f "$log" ]; then
+        FAILED_SSH=$(grep -c "Failed password" "$log" 2>/dev/null || echo 0)
+        break
+    fi
 done
-[ -z "$FAILED_SSH" ] && FAILED_SSH=$(journalctl -u sshd --since "24 hours ago" 2>/dev/null | grep -c "Failed password" || echo 0)
 
 # ── Top Processes ───────────────────────────────────────
 TOP_CPU=$(ps aux --sort=-%cpu | awk 'NR>1 && NR<=4 {printf "  %-6s %5s%%  %s\n", $2, $3, $11}')
 TOP_MEM=$(ps aux --sort=-%mem | awk 'NR>1 && NR<=4 {printf "  %-6s %5s%%  %s\n", $2, $4, $11}')
 
 # ── Output ──────────────────────────────────────────────
-echo -e "
-${C}   ╔═══════════════════════════════════════════════════════╗${NC}
-${C}   ║${W}           ⚙  OEDON SERVER DASHBOARD  ⚙              ${C}║${NC}
-${C}   ╚═══════════════════════════════════════════════════════╝${NC}
-${DIM}   $(date '+%A %d %B %Y  %H:%M:%S')${NC}
-
-${W} HOST${NC}     ${HOSTNAME}  │  ${NAME:-?} ${VERSION_ID:-?}  │  ${KERNEL}
-${W} UPTIME${NC}   ${UPTIME}  │  Load: ${LOAD}
-${W} USERS${NC}    ${USERS} │  IP: ${NET_IP} (${NET_IF})
-$(separator)
-${W} CPU${NC}      ${CPU_MODEL} (${CPU_CORES} cores)
-          $(bar "$CPU_PCT")
-${W} MEMORY${NC}   ${MEM_USED}/${MEM_TOTAL} MB
-          $(bar "$MEM_PCT")
-${W} SWAP${NC}     ${SWAP_USED}/${SWAP_TOTAL} MB
-          $(bar "$SWAP_PCT")
-${W} DISK ${NC}    ${DISK_USED}/${DISK_TOTAL} GB (${DISK_FREE} GB free)
-          $(bar "$DISK_PCT")
-$(separator)
-${W} TOP CPU${NC}
-${TOP_CPU}
-
-${W} TOP MEM${NC}
-${TOP_MEM}
-$(separator)
-${W} DOCKER${NC}   ${G}${DOCKER_RUNNING} running${NC} / ${DOCKER_TOTAL} total"
+echo -e "${G}"
+cat << 'LOGO'
+  ██████╗ ███████╗██████╗  ██████╗ ███╗   ██╗
+ ██╔═══██╗██╔════╝██╔══██╗██╔═══██╗████╗  ██║
+ ██║   ██║█████╗  ██║  ██║██║   ██║██╔██╗ ██║
+ ██║   ██║██╔══╝  ██║  ██║██║   ██║██║╚██╗██║
+ ╚██████╔╝███████╗██████╔╝╚██████╔╝██║ ╚████║
+  ╚═════╝ ╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═══╝
+LOGO
+echo -e "${NC}"
+echo -e "${DIM}   $(date '+%A %d %B %Y  %H:%M:%S')${NC}"
+echo ""
+echo -e "${W} HOST${NC}     ${HOSTNAME}  │  ${NAME:-?} ${VERSION_ID:-?}  │  ${KERNEL}"
+echo -e "${W} UPTIME${NC}   ${UPTIME}  │  Load: ${LOAD}"
+echo -e "${W} USERS${NC}    ${USERS} │  IP: ${NET_IP} (${NET_IF})"
+separator
+echo -e "${W} CPU${NC}      ${CPU_MODEL} (${CPU_CORES} cores)"
+echo -e "          $(bar "$CPU_PCT")"
+echo -e "${W} MEMORY${NC}   ${MEM_USED}/${MEM_TOTAL} MB"
+echo -e "          $(bar "$MEM_PCT")"
+echo -e "${W} SWAP${NC}     ${SWAP_USED}/${SWAP_TOTAL} MB"
+echo -e "          $(bar "$SWAP_PCT")"
+echo -e "${W} DISK${NC}     ${DISK_USED}/${DISK_TOTAL} GB (${DISK_FREE} GB free)"
+echo -e "          $(bar "$DISK_PCT")"
+separator
+echo -e "${W} TOP CPU${NC}"
+echo "$TOP_CPU"
+echo ""
+echo -e "${W} TOP MEM${NC}"
+echo "$TOP_MEM"
+separator
+echo -e "${W} DOCKER${NC}   ${G}${DOCKER_RUNNING} running${NC} / ${DOCKER_TOTAL} total"
 
 if [ -n "$DOCKER_PS" ]; then
     echo "$DOCKER_PS" | while IFS='|' read -r name status image; do
@@ -128,7 +142,17 @@ if [ -n "$DOCKER_PS" ]; then
     done
 fi
 
-echo -e "$(separator)
-${W} SSH${NC}      ${FAILED_SSH} failed login attempts (last 24h)
-${DIM}          btop for interactive monitoring${NC}
+separator
+echo -e "${W} SSH${NC}      ${FAILED_SSH} failed login attempts (last 24h)"
+
+if [ -d "$SITES_DIR" ] && [ "$(ls -A "$SITES_DIR" 2>/dev/null)" ]; then
+    echo ""
+    echo -e "${W} SITES${NC}"
+    ls -1 "$SITES_DIR" | sed 's/\.conf$//' | while read -r site; do
+        echo -e "  ${G}🌐${NC} https://${site}.${DOMAIN}"
+    done
+fi
+
+echo -e "
+${DIM}  btop for interactive monitoring${NC}
 "

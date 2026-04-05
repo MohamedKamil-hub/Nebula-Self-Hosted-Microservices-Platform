@@ -1,46 +1,45 @@
 ###############################################################################
-# NEBULA PROJECT - Hardened SSH Configuration
-# User: nebula-mohamed-kamil
-# Location: /etc/ssh/sshd_config
+# OEDON IDENTITY NODE - Hardened SSH
 ###############################################################################
 
-# --- Network Settings ---
+# --- Connection ---
 Port 2222
 ListenAddress 0.0.0.0
 Protocol 2
 
-# --- Security & Authentication ---
-LoginGraceTime 2m
+# --- Access Security ---
+LoginGraceTime 30s
+PermitRootLogin no
 StrictModes yes
 MaxAuthTries 3
-MaxSessions 3
+MaxSessions 2
 
-# Acceso exclusivo al usuario del proyecto
-AllowUsers nebula-mohamed-kamil
+# Only you are allowed
+AllowUsers your-username
 
-# Bloqueo total de accesos inseguros
-PermitRootLogin no
-PermitEmptyPasswords no
+# --- Authentication (KEYS ONLY) ---
+# This kills any password brute-force attack attempts
+PubkeyAuthentication yes
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 ChallengeResponseAuthentication no
+PermitEmptyPasswords no
+UsePAM yes
 
-# Autenticación criptográfica (Solo llaves)
-PubkeyAuthentication yes
-AuthorizedKeysFile .ssh/authorized_keys
+# --- Modern Encryption (Only algorithms that haven't been broken) ---
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+KexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group-exchange-sha256
 
-# --- Eficiencia y Gestión de Recursos ---
-# Desconecta sesiones inactivas tras 10 min de inactividad total
+# --- Tunnel Restrictions ---
+AllowAgentForwarding no
+AllowTcpForwarding no
+X11Forwarding no
+PermitTunnel no
+
+# --- Session Management ---
 ClientAliveInterval 300
 ClientAliveCountMax 2
-
-# --- Operational Settings ---
-UsePAM yes
-X11Forwarding no
 PrintMotd no
 AcceptEnv LANG LC_*
 Subsystem sftp /usr/lib/openssh/sftp-server
-
-###############################################################################
-# End of NEBULA Hardening
-###############################################################################

@@ -1,43 +1,51 @@
 #!/bin/bash
 # ./scripts/05-setup-firewall.sh
-# NEBULA - Firewall Configuration Script
+# OEDON - Firewall Configuration (Fortress Mode)
+set -euo pipefail
 
-echo "=== NEBULA FIREWALL CONFIGURATION ==="
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# ── Load .env ───────────────────────────────────────────
+[ -f "${PROJECT_DIR}/.env" ] && source "${PROJECT_DIR}/.env"
+
+SSH_PORT="${SSH_PORT:-2222}"
+HTTP_PORT="${HTTP_PORT:-80}"
+HTTPS_PORT="${HTTPS_PORT:-443}"
+PORTERO_UDP_PORT="${PORTERO_UDP_PORT:-62201}"
+
+echo "=== OEDON FIREWALL CONFIGURATION ==="
 
 # 1. Reset and policies
 sudo ufw --force reset
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 
-# 2. Main rules
+# 2. Rules from .env
 echo "Configuring rules..."
 
-# SSH Brute-force protection
-sudo ufw limit 2222/tcp comment 'SSH protected (6 tries/30s)'
+sudo ufw allow "${HTTP_PORT}/tcp" comment 'HTTP'
+sudo ufw allow "${HTTPS_PORT}/tcp" comment 'HTTPS'
+sudo ufw allow "${PORTERO_UDP_PORT}/udp" comment 'Oedon Portero Knock'
 
-# Web & Service ports
-sudo ufw allow 80/tcp comment 'HTTP'
-sudo ufw allow 443/tcp comment 'HTTPS'
-sudo ufw allow 10443/tcp comment 'HTTPS alternative port for Windows/WSL2 conflicts'
-sudo ufw allow 19999/tcp comment 'Netdata monitoring'
-sudo ufw allow 81/tcp comment 'Nginx Proxy Manager admin'
+# SSH is NOT opened — portero handles it dynamically
+# If you need emergency access: sudo ufw allow ${SSH_PORT}/tcp
 
-# 3. Activate firewall
+# 3. Activate
 sudo ufw --force enable
 
 echo "------------------------------------------------"
-echo " Firewall configured and enabled."
-echo "                                "
-echo "PORTS OPENED:"
-echo "  • 2222/tcp  - SSH (rate limited)"
-echo "  • 80/tcp    - HTTP"
-echo "  • 443/tcp   - HTTPS (standard)"
-echo "  • 10443/tcp - HTTPS alternative (Windows/WSL2 compatibility)"
-echo "  • 19999/tcp - Netdata monitoring"
-echo "  • 81/tcp    - NPM admin panel"
+echo " Firewall configured (Fortress Mode)"
 echo ""
-echo " ! CAUTION: SSH has rate limiting (6 tries/30s)"
-echo "For development: 'sudo ufw allow 2222/tcp' removes limit"
+echo " PORTS OPEN:"
+echo "   ${HTTP_PORT}/tcp   - HTTP"
+echo "   ${HTTPS_PORT}/tcp  - HTTPS"
+echo "   ${PORTERO_UDP_PORT}/udp  - Portero Knock"
+echo ""
+echo " PORTS CLOSED (by design):"
+echo "   ${SSH_PORT}/tcp   - SSH (opened by portero only)"
+echo "   81/tcp    - NPM (not installed)"
+echo "   19999/tcp - Netdata (not installed)"
 echo "------------------------------------------------"
 
 sudo ufw status verbose

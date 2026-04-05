@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+"""
+Ejemplo de cliente SPA para fwknop (requiere instalar fwknop CLI).
+Este script solo muestra cómo llamar al comando real.
+"""
+
+import subprocess
+import sys
+
+def send_spa(server_ip, key_b64, port="2222"):
+    cmd = [
+        "fwknop", "-A", f"tcp/{port}",
+        "-D", server_ip,
+        "--key-base64", key_b64,
+        "--use-hmac",
+        "--server-port", "62201"
+    ]
+    subprocess.run(cmd)
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Uso: OedonAuth.py <IP_SERVIDOR> <KEY_BASE64>")
+        sys.exit(1)
+    send_spa(sys.argv[1], sys.argv[2])

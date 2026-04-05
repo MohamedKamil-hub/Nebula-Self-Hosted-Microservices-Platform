@@ -1,0 +1,14 @@
+[Unit]
+Description=Oedon Portero Digital - UDP Port Knock
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/oedon-portero/portero.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

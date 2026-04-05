@@ -1,8 +1,5 @@
 version: '3'
 
-vars:
-  BACKUP_SCRIPT: ./scripts/backup-nebula.sh
-
 tasks:
   default:
     desc: List available tasks
@@ -11,9 +8,9 @@ tasks:
 
   # --- Infrastructure Operations ---
   up:
-    desc: Start the entire NEBULA stack
+    desc: Start the entire OEDON stack
     cmds:
-      - echo "🚀 Starting NEBULA..."
+      - echo "🚀 Starting OEDON..."
       - docker compose up -d
     silent: true
 
@@ -44,12 +41,22 @@ tasks:
     cmds:
       - docker stats
 
+  stats:
+    desc: Show Oedon dashboard
+    cmds:
+      - bash ./scripts/oedon-stats.sh
+
+  render:
+    desc: Render Nginx configs from templates
+    cmds:
+      - bash ./scripts/render-nginx.sh
+
   # --- Security & Maintenance ---
   backup:
     desc: Execute the backup script
     cmds:
       - echo "📦 Running Backup Procedure..."
-      - bash {{.BACKUP_SCRIPT}}
+      - bash ./scripts/99-backup.sh
 
   security-check:
     desc: Audit active security layers (Firewall & IPS)
@@ -63,6 +70,7 @@ tasks:
     desc: Update code from Git and redeploy containers
     cmds:
       - git pull origin main
+      - bash ./scripts/render-nginx.sh
       - docker compose up -d --build --remove-orphans
 
   clean:

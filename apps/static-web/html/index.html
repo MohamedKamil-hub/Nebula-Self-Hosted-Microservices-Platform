@@ -1,48 +1,472 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEBULA - Plataforma Autogestionada</title>
-    <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OEDON — Invisible but Omnipresent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Share+Tech+Mono&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <header>
-        <h1>NEBULA</h1>
-        <p>Plataforma autogestionada para despliegue de aplicaciones</p>
-    </header>
 
-    <main>
-        <section class="info">
-            <h2>Características</h2>
-            <ul>
-                <li>Seguridad con SSL/TLS automático</li>
-                <li>Monitorización en tiempo real</li>
-                <li>Contenedores Docker</li>
-                <li>Proxy inverso Nginx</li>
-            </ul>
-        </section>
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo">O<span>E</span>DON</a>
+  <ul class="nav-links">
+    <li><a href="#philosophy">Philosophy</a></li>
+    <li><a href="#stack">Stack</a></li>
+    <li><a href="#portero">Portero</a></li>
+    <li><a href="#security">Security</a></li>
+    <li><a href="#iac">IaC</a></li>
+    <li><a href="#watchdog">Watchdog</a></li>
+  </ul>
+</nav>
 
-        <section class="stats">
-            <h2>Estado del sistema</h2>
-            <div class="stat-box">
-                <p><strong>CPU:</strong> <span id="cpu">--</span>%</p>
-                <p><strong>RAM:</strong> <span id="ram">--</span> MB</p>
-                <p><strong>Contenedores:</strong> <span id="containers">4</span></p>
-            </div>
-            <div class="stat-box">
-                <p><strong>Dominio:</strong> app.nebula.test</p>
-                <p><strong>SSL:</strong> <span id="ssl">Activo</span></p>
-                <p><strong>Hora:</strong> <span id="time">--</span></p>
-            </div>
-        </section>
-    </main>
+<!-- HERO -->
+<section id="hero">
+  <div class="rune-ring"></div>
+  <div class="rune-ring"></div>
+  <div class="rune-ring"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Personal PaaS · Infrastructure as Code · Zero Trust</p>
+    <h1 class="hero-title">OEDON</h1>
+    <p class="hero-subtitle"><em>Invisible</em> &nbsp;·&nbsp; Omnipresent &nbsp;·&nbsp; <em>Indestructible</em></p>
+    <p class="hero-desc">
+      A self-hosted, terminal-centric PaaS fortress. No dashboards. No bloat. No web panels.
+      Pure Nginx, custom cryptographic port-knocking, and infrastructure that lives in a single folder.
+    </p>
+    <div class="hero-cta">
+      <a href="#stack" class="btn btn-primary"><span>Explore the Stack</span></a>
+      <a href="#iac" class="btn btn-ghost"><span>View Structure</span></a>
+    </div>
+  </div>
+  <div class="scroll-indicator">
+    <span>DESCEND</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
 
-    <footer>
-        <p>NEBULA © 2026 | Mohamed Kamil El Kouarti | 2º SMR Prometeo</p>
-        <p><a href="https://github.com/MohamedKamil-hub/nebula-selfhosted-paas">GitHub</a></p>
-    </footer>
+<!-- PHILOSOPHY -->
+<div id="philosophy" class="section-wrap">
+  <section class="two-col align-center">
+    <div class="philosophy-text reveal">
+      <p class="section-label">// The Doctrine</p>
+      <h2>Keep It Simple.<br>Keep It Deadly.</h2>
+      <p>Oedon is not a product — it is a philosophy applied to infrastructure. Every tool must earn its place: no web panels, no management databases, no interfaces that obscure what is actually happening. If you can't audit it in a terminal, it doesn't belong in the stack.</p>
+      <p>Born from frustration with cloud lock-in and bloated PaaS platforms, Oedon is a portable fortress — a folder you carry to any VPS, run <code>docker compose up</code>, and own a hardened server.</p>
+      <blockquote>
+        <p>Invisible but omnipresent. It doesn't appear in <code>top</code>. It doesn't consume. It protects and serves with the maximum efficiency of pure Nginx.</p>
+        <cite>— The Oedon Doctrine</cite>
+      </blockquote>
+    </div>
+    <div class="philosophy-side reveal reveal-delay-2">
+      <div class="lore-box">
+        <p><strong>On the name:</strong> Oedon is a Great One from <em>Bloodborne</em> — a god without form, invisible and omnipresent, existing only in the unseen. A fitting namesake for infrastructure that should be felt but never seen: no processes to expose, no web surfaces to attack, no form for adversaries to grip.</p>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-tile"><div class="stat-val">KISS</div><div class="stat-lbl">PHILOSOPHY</div></div>
+        <div class="stat-tile"><div class="stat-val">IaC</div><div class="stat-lbl">APPROACH</div></div>
+        <div class="stat-tile"><div class="stat-val">0 UI</div><div class="stat-lbl">NO DASHBOARDS</div></div>
+        <div class="stat-tile"><div class="stat-val">SPA</div><div class="stat-lbl">CUSTOM AUTH</div></div>
+      </div>
+    </div>
+  </section>
+</div>
 
-    <script src="/js/script.js"></script>
+<!-- DIVIDER -->
+<div class="rune-divider-wrap">
+  <div class="rune-divider"><span>✦ THE STACK ✦</span></div>
+</div>
+
+<!-- STACK -->
+<div id="stack" class="dark-band">
+  <div class="stack-inner">
+    <p class="section-label reveal">// Components</p>
+    <h2 class="reveal">Every piece earns its place.</h2>
+    <p class="reveal muted-text">No NPM. No Nginx Proxy Manager. No Netdata. Each component is the smallest, fastest, most auditable tool for the job.</p>
+    <div class="card-grid">
+
+      <div class="stack-card reveal">
+        <div class="card-accent"></div>
+        <span class="card-icon">🗄️</span>
+        <div class="card-tag">Reverse Proxy</div>
+        <h3>Nginx Alpine</h3>
+        <p>Official Alpine image. Configured via <code>envsubst</code> templates — no database, no interface. Three vhosts: static, wordpress, python. If it starts, it works.</p>
+      </div>
+
+      <div class="stack-card reveal reveal-delay-1">
+        <div class="card-accent"></div>
+        <span class="card-icon">🐳</span>
+        <div class="card-tag">Runtime</div>
+        <h3>Docker Compose</h3>
+        <p>The entire platform is a single <code>docker compose up</code>. A shared <code>oedon-network</code> connects all services while keeping them isolated from the host.</p>
+      </div>
+
+      <div class="stack-card reveal reveal-delay-2">
+        <div class="card-accent"></div>
+        <span class="card-icon">🔒</span>
+        <div class="card-tag">Custom SPA Auth</div>
+        <h3>Portero Digital</h3>
+        <p>Custom UDP knock daemon — HMAC-SHA256 + timestamp validation. Port 2222 opens for 60 seconds, then locks. Built in Python, zero external dependencies.</p>
+      </div>
+
+      <div class="stack-card reveal">
+        <div class="card-accent"></div>
+        <span class="card-icon">🛡️</span>
+        <div class="card-tag">Intrusion Prevention</div>
+        <h3>Fail2ban</h3>
+        <p>Custom filters for WordPress <code>wp-login.php</code> (5 fails → 1h ban) and <code>xmlrpc.php</code> (2 hits → 24h ban). Ban action writes directly to <code>ufw</code>.</p>
+      </div>
+
+      <div class="stack-card reveal reveal-delay-1">
+        <div class="card-accent"></div>
+        <span class="card-icon">🔐</span>
+        <div class="card-tag">TLS / ACME</div>
+        <h3>Certbot Container</h3>
+        <p>Stays stopped — exit 0, zero resources. Run <code>./scripts/oedon-certbot.sh obtain domain.com</code> when you need real certificates. Nothing runs unless summoned.</p>
+      </div>
+
+      <div class="stack-card reveal reveal-delay-2">
+        <div class="card-accent"></div>
+        <span class="card-icon">📡</span>
+        <div class="card-tag">Monitoring</div>
+        <h3>oedon-stats.sh</h3>
+        <p>Custom terminal dashboard. ASCII banner, CPU/RAM/disk bars, Docker container status, top processes, failed SSH attempts. Runs as MOTD on every login.</p>
+      </div>
+
+      <div class="stack-card reveal">
+        <div class="card-accent"></div>
+        <span class="card-icon">🐍</span>
+        <div class="card-tag">Notary Service</div>
+        <h3>Python App</h3>
+        <p>Flask app tracking deployment integrity via <code>/sign</code> and <code>/verify</code> endpoints. If a container's code changes without authorization, Oedon knows.</p>
+      </div>
+
+      <div class="stack-card reveal reveal-delay-1">
+        <div class="card-accent"></div>
+        <span class="card-icon">📦</span>
+        <div class="card-tag">Backup</div>
+        <h3>Telegram Backups</h3>
+        <p><code>99-backup.sh</code> archives SSH config, Fail2ban, UFW state and Docker volumes. A single <code>curl</code> sends it to Telegram. Up to 2 GB, free, on your phone.</p>
+      </div>
+
+      <div class="stack-card reveal reveal-delay-2">
+        <div class="card-accent"></div>
+        <span class="card-icon">⚡</span>
+        <div class="card-tag">CI/CD</div>
+        <h3>GitHub Actions</h3>
+        <p>On every <code>git push</code>: validates <code>docker-compose.yml</code> with <code>docker compose config</code>, checks app structure. Deployment-ready status confirmed automatically.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- PORTERO SECTION -->
+<div id="portero" class="section-wrap">
+  <section class="two-col align-start">
+    <div class="reveal">
+      <p class="section-label">// Custom Security Tool</p>
+      <h2>Portero Digital.<br>Built from scratch.</h2>
+      <p>Instead of relying on external tools, Oedon ships its own UDP knock daemon: <strong>portero.py</strong>. It listens on UDP port 62201, validates a HMAC-SHA256 payload with timestamp tolerance, and uses <code>ufw</code> to open port 2222 for exactly 60 seconds.</p>
+      <p>The client — <code>knock.py</code> — sends a single UDP datagram with a timestamp and HMAC signature. Old timestamps are rejected, making replay attacks impossible. The server runs as a <code>systemd</code> service installed by <code>install.sh</code>.</p>
+      <div class="feature-list">
+        <div class="feature-item"><span class="feat-ok">✓</span> HMAC-SHA256 + timestamp validation</div>
+        <div class="feature-item"><span class="feat-ok">✓</span> Replay attack protection (30s tolerance)</div>
+        <div class="feature-item"><span class="feat-ok">✓</span> Auto-close after 60 seconds</div>
+        <div class="feature-item"><span class="feat-ok">✓</span> Systemd service — starts on boot</div>
+        <div class="feature-item"><span class="feat-ok">✓</span> Zero external dependencies — stdlib only</div>
+        <div class="feature-item"><span class="feat-ok">✓</span> Port 2222 not open in UFW by default</div>
+      </div>
+    </div>
+    <div class="reveal reveal-delay-2">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>
+          <div class="t-title">portero.py — systemd</div>
+        </div>
+        <div class="terminal-body" id="terminal-portero">
+          <span class="t-line"><span class="t-comment"># From your local machine:</span></span>
+          <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">python3</span> <span class="t-arg">knock.py 192.168.1.141</span></span>
+          <span class="t-out t-success">Knock sent to 192.168.1.141:62201</span>
+          <span class="t-line">&nbsp;</span>
+          <span class="t-line"><span class="t-comment"># Server log (portero.py):</span></span>
+          <span class="t-out">[PORTERO] Knock from 192.168.1.50</span>
+          <span class="t-out t-success">[PORTERO] HMAC valid — port 2222 open (60s)</span>
+          <span class="t-line">&nbsp;</span>
+          <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">ssh</span> <span class="t-arg">m-kamil@oedon-server -p 2222</span></span>
+          <span class="t-out t-success">Welcome to OEDON ██████╗</span>
+          <span class="t-line">&nbsp;</span>
+          <span class="t-out t-muted">[PORTERO] 60s elapsed — port 2222 closed</span>
+          <span class="t-out t-muted">[PORTERO] Active session unaffected.</span>
+          <span class="t-line"><span class="t-cursor"></span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- SECURITY LAYERS -->
+<div id="security" class="surface-band">
+  <section>
+    <p class="section-label reveal">// Defence in Depth</p>
+    <h2 class="reveal">The Fortress Layers</h2>
+    <div class="security-layout">
+      <div class="security-layers reveal">
+
+        <div class="layer">
+          <div class="layer-num">L1</div>
+          <div class="layer-body">
+            <h3>Portero Digital — Custom SPA</h3>
+            <p>SSH port 2222 closed by default in UFW. Opens only after a valid HMAC-SHA256 UDP packet from <code>knock.py</code>. Closes automatically after 60s.</p>
+          </div>
+          <div class="layer-status status-custom">CUSTOM</div>
+        </div>
+
+        <div class="layer">
+          <div class="layer-num">L2</div>
+          <div class="layer-body">
+            <h3>UFW Firewall</h3>
+            <p>Default deny incoming. Only ports 80 and 443 face the world. Port 81, 19999 — not installed. Management is terminal-only via SSH.</p>
+          </div>
+          <div class="layer-status status-active">ACTIVE</div>
+        </div>
+
+        <div class="layer">
+          <div class="layer-num">L3</div>
+          <div class="layer-body">
+            <h3>Fail2ban — WordPress Hardened</h3>
+            <p>Custom filters: <code>wordpress-login.conf</code> (5 fails → 1h ban) and <code>wordpress-xmlrpc.conf</code> (2 hits → 24h ban). Ban action: <code>ufw</code>.</p>
+          </div>
+          <div class="layer-status status-active">ACTIVE</div>
+        </div>
+
+        <div class="layer">
+          <div class="layer-num">L4</div>
+          <div class="layer-body">
+            <h3>Docker Network Isolation</h3>
+            <p>All containers on <code>oedon-network</code> (172.18.0.0/16). Internal services expose no ports to the host. Only <code>oedon-proxy</code> faces the world.</p>
+          </div>
+          <div class="layer-status status-active">ACTIVE</div>
+        </div>
+
+        <div class="layer">
+          <div class="layer-num">L5</div>
+          <div class="layer-body">
+            <h3>SSH Hardening</h3>
+            <p>Custom port 2222. <code>sshd_config</code> in version control. <code>PrintMotd no</code> — PAM handles MOTD via <code>oedon-stats.sh</code> on every session.</p>
+          </div>
+          <div class="layer-status status-active">ACTIVE</div>
+        </div>
+
+        <div class="layer">
+          <div class="layer-num">L6</div>
+          <div class="layer-body">
+            <h3>TLS Everywhere</h3>
+            <p>Self-signed wildcard cert for <code>*.oedon.test</code> in development. Certbot container ready for Let's Encrypt on production. HTTP → HTTPS on all vhosts.</p>
+          </div>
+          <div class="layer-status status-active">ACTIVE</div>
+        </div>
+
+      </div>
+
+      <div class="reveal reveal-delay-2">
+        <div class="siege-box">
+          <h3>// Port Exposure</h3>
+          <div class="siege-stat">
+            <span class="siege-label">Port 80 (HTTP)</span>
+            <div class="bar-wrap"><div class="bar-fill" style="width:100%"></div></div>
+            <span class="siege-val ok">OPEN</span>
+          </div>
+          <div class="siege-stat">
+            <span class="siege-label">Port 443 (HTTPS)</span>
+            <div class="bar-wrap"><div class="bar-fill" style="width:100%"></div></div>
+            <span class="siege-val ok">OPEN</span>
+          </div>
+          <div class="siege-stat">
+            <span class="siege-label">Port 2222 (SSH)</span>
+            <div class="bar-wrap"><div class="bar-fill" style="width:0%"></div></div>
+            <span class="siege-val muted">CLOSED*</span>
+          </div>
+          <div class="siege-stat">
+            <span class="siege-label">Port 62201 (UDP)</span>
+            <div class="bar-wrap"><div class="bar-fill" style="width:5%"></div></div>
+            <span class="siege-val ember">KNOCK</span>
+          </div>
+          <div class="siege-stat">
+            <span class="siege-label">Port 81 / 19999</span>
+            <div class="bar-wrap"><div class="bar-fill" style="width:0%"></div></div>
+            <span class="siege-val muted">NOT INSTALLED</span>
+          </div>
+          <p class="siege-note">*Opens 60s after valid knock</p>
+        </div>
+
+        <div class="siege-box" style="margin-top:1.5rem;">
+          <h3>// Services</h3>
+          <div class="siege-stat"><span class="siege-label">oedon-proxy</span><span class="siege-val ok">● up</span></div>
+          <div class="siege-stat"><span class="siege-label">oedon-static</span><span class="siege-val ok">● up</span></div>
+          <div class="siege-stat"><span class="siege-label">wordpress-app</span><span class="siege-val ok">● up</span></div>
+          <div class="siege-stat"><span class="siege-label">wordpress-db</span><span class="siege-val ok">● up</span></div>
+          <div class="siege-stat"><span class="siege-label">python-app</span><span class="siege-val ok">● up</span></div>
+          <div class="siege-stat"><span class="siege-label">certbot</span><span class="siege-val muted">○ stopped (ok)</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- IAC -->
+<div id="iac" class="void-band">
+  <div class="iac-inner">
+    <div class="iac-text reveal">
+      <p class="section-label">// Infrastructure as Code</p>
+      <h2>One folder.<br>Any VPS.<br>Full fortress.</h2>
+      <p>Clone the repo, configure <code>.env</code>, run. No setup wizards. No web screens. No state outside the folder. Scripts are numbered — the filename is the documentation.</p>
+      <p>Every config lives in version control: Nginx vhosts, Fail2ban jails, SSH config, Docker Compose. CI/CD validates structure on every push via GitHub Actions.</p>
+      <div class="file-tree reveal reveal-delay-1">
+        <span class="ft-dir">Oedon/</span><br>
+        ├── <span class="ft-key">.env</span> <span class="ft-comment">(DOMAIN, TELEGRAM, thresholds)</span><br>
+        ├── <span class="ft-key">docker-compose.yml</span><br>
+        ├── <span class="ft-key">Taskfile.yaml</span><br>
+        ├── <span class="ft-script">portero.py</span> + <span class="ft-script">knock.py</span><br>
+        ├── <span class="ft-dir">scripts/</span><br>
+        │&nbsp;&nbsp; ├── <span class="ft-script">01-install-docker.sh</span><br>
+        │&nbsp;&nbsp; ├── <span class="ft-script">05-setup-firewall.sh</span><br>
+        │&nbsp;&nbsp; ├── <span class="ft-script">06-setup-fail2ban.sh</span><br>
+        │&nbsp;&nbsp; ├── <span class="ft-script">oedon-stats.sh</span><br>
+        │&nbsp;&nbsp; ├── <span class="ft-script">oedon-watchdog.sh</span><br>
+        │&nbsp;&nbsp; └── <span class="ft-script">99-backup.sh</span><br>
+        ├── <span class="ft-dir">config/nginx/templates/</span><br>
+        │&nbsp;&nbsp; ├── <span class="ft-config">static.conf.template</span><br>
+        │&nbsp;&nbsp; ├── <span class="ft-config">wordpress.conf.template</span><br>
+        │&nbsp;&nbsp; └── <span class="ft-config">python.conf.template</span><br>
+        └── <span class="ft-dir">apps/</span> static-web · wordpress-app · python-app
+      </div>
+    </div>
+    <div class="reveal reveal-delay-2">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>
+          <div class="t-title">oedon-server — bash</div>
+        </div>
+        <div class="terminal-body" id="terminal-iac">
+          <span class="t-line"><span class="t-comment"># Fresh VPS — full deploy</span></span>
+          <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">git clone</span> <span class="t-arg">github.com/user/Oedon && cd Oedon</span></span>
+          <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">cp</span> <span class="t-arg">.env.example .env</span> <span class="t-comment"># set domain, telegram</span></span>
+          <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">./scripts/01-install-docker.sh</span></span>
+          <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">./scripts/05-setup-firewall.sh</span></span>
+          <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">./scripts/06-setup-fail2ban.sh</span></span>
+          <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">sudo bash install.sh</span> <span class="t-comment"># portero daemon</span></span>
+          <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">docker compose up</span> <span class="t-arg">-d</span></span>
+          <span class="t-out t-success">✓ oedon-proxy    started</span>
+          <span class="t-out t-success">✓ oedon-static   started</span>
+          <span class="t-out t-success">✓ wordpress-app  started</span>
+          <span class="t-out t-success">✓ python-app     started</span>
+          <span class="t-out t-success">✓ certbot        exited (0)</span>
+          <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">./scripts/setup-watchdog.sh</span></span>
+          <span class="t-out t-success">✓ Telegram OK · cron active (*/5 min)</span>
+          <span class="t-line"><span class="t-cursor"></span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WATCHDOG -->
+<div id="watchdog" class="dark-band">
+  <div class="watchdog-inner">
+    <p class="section-label reveal">// Autonomous Guardian</p>
+    <h2 class="reveal">oedon-watchdog.sh</h2>
+    <p class="reveal muted-text">Every 5 minutes. 30-minute cooldown to prevent spam. Reads thresholds from <code>.env</code>. Silent when calm. Loud when needed.</p>
+    <div class="watch-grid">
+      <div class="watch-item reveal">
+        <div class="watch-icon">💾</div>
+        <h3>Disk Usage</h3>
+        <p>Alerts before the disk fills. Threshold: <code>WATCHDOG_DISK_THRESHOLD</code> in <code>.env</code>.</p>
+        <span class="watch-freq">every 5 min</span>
+      </div>
+      <div class="watch-item reveal reveal-delay-1">
+        <div class="watch-icon">📊</div>
+        <h3>RAM & Load</h3>
+        <p>Memory pressure and CPU load vs. <code>nproc</code>. Thresholds configurable.</p>
+        <span class="watch-freq">every 5 min</span>
+      </div>
+      <div class="watch-item reveal reveal-delay-2">
+        <div class="watch-icon">🐳</div>
+        <h3>Container Health</h3>
+        <p>Checks all containers in <code>WATCHDOG_CONTAINERS</code>. Detects crashed or restarting.</p>
+        <span class="watch-freq">every 5 min</span>
+      </div>
+      <div class="watch-item reveal reveal-delay-3">
+        <div class="watch-icon">⚔️</div>
+        <h3>SSH Intrusion</h3>
+        <p>Counts failed auth from <code>/var/log/auth.log</code>. Alert if &gt;10 attempts in 5 min.</p>
+        <span class="watch-freq">every 5 min</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOTD -->
+<div id="motd" class="void-band">
+  <div class="motd-outer">
+    <p class="section-label reveal" style="text-align:center">// The Welcome Screen</p>
+    <h2 class="reveal" style="text-align:center">Every SSH session starts with a briefing.</h2>
+    <p class="reveal muted-text" style="text-align:center; max-width:480px; margin: 0 auto 3rem;"><code>oedon-stats.sh</code> runs as MOTD via <code>pam_motd</code>. No browser. No login screen. Just the terminal.</p>
+    <div class="motd-wrap reveal">
+      <div class="motd-terminal">
+        <div class="motd-bar"><p>ssh m-kamil@oedon-server -p 2222</p></div>
+        <div class="motd-body">
+          <pre class="motd-ascii">  ██████╗ ███████╗██████╗  ██████╗ ███╗   ██╗
+ ██╔═══██╗██╔════╝██╔══██╗██╔═══██╗████╗  ██║
+ ██║   ██║█████╗  ██║  ██║██║   ██║██╔██╗ ██║
+ ██║   ██║██╔══╝  ██║  ██║██║   ██║██║╚██╗██║
+ ╚██████╔╝███████╗██████╔╝╚██████╔╝██║ ╚████║
+  ╚═════╝ ╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═══╝</pre>
+          <div class="motd-meta">Invisible but Omnipresent · <span id="motd-date"></span></div>
+          <hr class="motd-sep">
+          <div class="motd-row"><span class="mk">Hostname</span><span class="mv">oedon-server</span></div>
+          <div class="motd-row"><span class="mk">Uptime</span><span class="mv ok">14 days, 6 hours</span></div>
+          <div class="motd-row"><span class="mk">CPU Load</span><span class="mv ok">0.12 / 0.18 / 0.21</span></div>
+          <div class="motd-row"><span class="mk">RAM</span><span class="mv ok">1.2G / 4.0G</span></div>
+          <div class="motd-row"><span class="mk">Disk /</span><span class="mv warn">61% — 18.3 / 30 GB</span></div>
+          <hr class="motd-sep">
+          <div class="motd-row"><span class="mk">oedon-proxy</span><span class="mv ok">● running</span></div>
+          <div class="motd-row"><span class="mk">wordpress-app</span><span class="mv ok">● running</span></div>
+          <div class="motd-row"><span class="mk">python-app</span><span class="mv ok">● running</span></div>
+          <div class="motd-row"><span class="mk">certbot</span><span class="mv muted">○ stopped (ok)</span></div>
+          <hr class="motd-sep">
+          <div class="motd-row"><span class="mk">Fail2ban bans</span><span class="mv blood">47 today · 1,204 total</span></div>
+          <div class="motd-row"><span class="mk">SSH port</span><span class="mv muted">2222 — closed (portero active)</span></div>
+          <div class="motd-row"><span class="mk">Last backup</span><span class="mv ok">2h ago · Telegram ✓</span></div>
+          <hr class="motd-sep">
+          <div class="motd-quote">"He who has no form cannot be grasped."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-bg-text">OEDON</div>
+  <div class="footer-content">
+    <div class="footer-logo">O<span>E</span>DON</div>
+    <p class="footer-tagline">Invisible · Omnipresent · Indestructible</p>
+    <ul class="footer-links">
+      <li><a href="#philosophy">Doctrine</a></li>
+      <li><a href="#stack">Stack</a></li>
+      <li><a href="#portero">Portero</a></li>
+      <li><a href="#security">Security</a></li>
+      <li><a href="#iac">IaC</a></li>
+    </ul>
+    <p class="footer-copy">OEDON · Personal PaaS Fortress · © 2026 Mohamed Kamil · MIT License</p>
+    <p class="footer-copy">Inspired by the Great One without form — <em>Bloodborne</em>, FromSoftware</p>
+  </div>
+</footer>
+
+<script src="js/script.js"></script>
 </body>
 </html>

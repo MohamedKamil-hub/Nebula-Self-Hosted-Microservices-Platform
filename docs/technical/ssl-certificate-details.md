@@ -1,47 +1,40 @@
-## Certificado TLS – NEBULA
+# TLS Certificate – OEDON
 
-### Información del sujeto
-- **País (C):** ES  
-- **Estado/Provincia (ST):** Madrid  
-- **Localidad (L):** Madrid  
-- **Organización (O):** NEBULA  
-- **Nombre común (CN):** *.nebula.test  
+## Subject
+- **CN :**  *.oedon.test
 
-### Información del emisor
-- **País (C):** ES  
-- **Estado/Provincia (ST):** Madrid  
-- **Localidad (L):** Madrid  
-- **Organización (O):** NEBULA  
-- **Nombre común (CN):** *.nebula.test  
+## Issuer
+- **CN :**  *.oedon.test
 
-### Validez
-- **Válido desde:** Thu, 05 Feb 2026 23:40:56 GMT  
-- **Válido hasta:** Fri, 05 Feb 2027 23:40:56 GMT  
+## Validity
+- **Not Before:** Apr  5 01:15:03 2026 GMT
+- **Not After:**  Apr  2 01:15:03 2036 GMT
 
-### Clave pública
-- **Algoritmo:** RSA  
-- **Tamaño de clave:** 2048 bits  
-- **Exponente:** 65537  
-- **Algoritmo de firma:** SHA-256 with RSA Encryption  
-- **Versión X.509:** v3  
+## Public Key
+- **Algorithm:** RSA
+- **Key Size:**  bits
+- **Exponent:** X509v3 extensions:
+- **Signature Algorithm:** sha256WithRSAEncryption
+- **X.509 Version:** 3 (0x2)
 
-### Identificadores
-- **Número de serie:**  
-  `36:5A:32:B7:50:FE:D4:69:A9:A2:92:85:EC:80:41:A4:74:B5:45:B1`
+## Identifiers
+- **Serial Number:**
+  `4D:6F:B7:16:35:87:F7:9B:82:72:94:F5:05:4F:C3:41:E5:B1:ED:79`
 
-### Huellas digitales
-- **SHA-256:**  
-  `22:CB:68:E7:18:0C:ED:3E:0C:50:AB:4C:CA:1E:1D:90:C1:D5:C9:46:95:4E:03:B4:D8:E6:74:68:26:9D:19:B3`
+## Fingerprints
+- **SHA-256:**
+  `8B::6:F::8F::E:0::30::D:7::06::4:2::B3::7:4::14::7:9::6F::0:E::E6::6:1::8D::2:9::57::B:B::A6::6:2::1E::F:5::7D::1:B::9B::2:4::EB::4:8::9C::E:5`
 
-- **SHA-1:**  
-  `8E:87:98:5D:3A:4B:63:E0:15:19:C7:16:DC:87:3A:2A:87:CF:FE:2F`
+- **SHA-1:**
+  `9D::4:F::6A::7:1::1A::8:3::31::9:F::04::A:9::B8::A:9::03::8:E::9E::A:D::53::8:A::36::2:6`
 
-### Extensiones
-- **Restricciones básicas:**  
-  - Autoridad de certificación: **Sí** (extensión crítica)
+## Extensions
+- **Basic Constraints:**
+                  CA:TRUE
+              X509v3 Subject Alternative Name: 
 
-- **ID de clave de sujeto:**  
-  `E6:E6:56:34:87:92:3A:72:58:03:72:72:1F:72:E0:3F:25:E5:B7:07`
+- **Subject Key Identifier:**
+  `35:B8:DE:7F:C6:E3:CF:ED:AD:9C:A1:20:C9:DA:49:9E:8C:29:8F:72`
 
-- **ID de clave de la autoridad:**  
-  `E6:E6:56:34:87:92:3A:72:58:03:72:72:1F:72:E0:3F:25:E5:B7:07`
+- **Authority Key Identifier:**
+  `35:B8:DE:7F:C6:E3:CF:ED:AD:9C:A1:20:C9:DA:49:9E:8C:29:8F:72`
