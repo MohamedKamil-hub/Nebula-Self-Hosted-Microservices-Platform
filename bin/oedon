@@ -50,6 +50,16 @@ case "$cmd" in
         grep -v '^#' "$APPS_LIST" | grep '|' || echo "No apps found."
         ;;
 
+secure)
+    echo "🔒 Blindando el servidor..."
+    check_sudo
+    bash "${SCRIPTS}/05-setup-firewall.sh"
+    bash "${SCRIPTS}/06-setup-fail2ban.sh"
+    bash "${SCRIPTS}/setup-motd.sh"
+    echo "✅ Servidor fortificado."
+    ;;
+
+
 
 
 # --- System & Security ---

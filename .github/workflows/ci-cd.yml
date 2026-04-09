@@ -16,28 +16,60 @@ jobs:
 
       - name: ShellCheck scripts
         run: |
-          # Validamos que tus scripts de automatización no tengan errores sintácticos
           sudo apt-get install -y shellcheck
-          shellcheck scripts/*.sh || echo "Warnings en scripts detectados"
+          shellcheck scripts/*.sh || echo "Warnings menores detectados"
 
   deploy:
     name: Production Deployment
     needs: validate
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: sudo apt-get install -y hping3 # Para enviar el paquete UDP de knocking
+        run: sudo apt-get install -y hping3 netcat-openbsd
+
+      - name: Generate HMAC Token
+        id: token
+        shell: python
+        run: |
+          import hmac, hashlib, time, os
+          # Recuperamos los secretos de las variables de entorno para seguridad
+          secret = os.environ.get("PORTERO_SECRET", "").encode()
+          if not secret:
+              print("❌ Error: PORTERO_SECRET no encontrado")
+              exit(1)
+          
+          # Lógica idéntica a tu portero.py: ventana de 60 segundos
+          window = int(time.time()) // 60
+          message = str(window).encode()
+          token = hmac.new(secret, message, hashlib.sha256).hexdigest()
+          
+          # Exportamos el token para el siguiente paso
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"value={token}\n")
+        env:
+          PORTERO_SECRET: ${{ secrets.PORTERO_SECRET }}
 
       - name: Open Firewall (Port Knocking)
         run: |
-          # Simulamos el 'toque' que espera tu portero.py
-          # Enviamos el secreto al puerto UDP 62201
-          echo -n "${{ secrets.PORTERO_SECRET }}" | nc -u -w1 ${{ secrets.SSH_HOST }} 62201
-          echo "🚪 Puerta abierta (teóricamente) por 60 segundos"
+          # Usamos variables para evitar el error de "missing port number"
+          HOST="${{ secrets.SSH_HOST }}"
+          PORT=62201
+          TOKEN="${{ steps.token.outputs.value }}"
+
+          if [ -z "$HOST" ]; then
+            echo "❌ Error: SSH_HOST no está definido en los secretos de GitHub"
+            exit 1
+          fi
+
+          echo "Enviando knock a $HOST en puerto $PORT..."
+          echo -n "$TOKEN" | nc -u -w2 "$HOST" "$PORT"
+          
+          sleep 2 # Margen para que portero.py ejecute la regla de UFW
+          echo "🚪 Intento de apertura completado"
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -45,19 +77,14 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          port: 2222 # Tu puerto SSH personalizado
+          port: 2222
           script: |
             cd ~/Oedon
             git pull origin main
             
-            # Recargar configuración usando tus plantillas e inyectando .env
-            # Esto es lo que hace a Oedon "Invisible" y basado en IaC
-            ./scripts/setup-nginx.sh 
-            
-            # Reiniciar servicios sin downtime agresivo
+            # Ejecutamos tu lógica de despliegue
+            ./scripts/setup-nginx.sh
             docker compose up -d --remove-orphans
-            
-            # Limpieza de imágenes antiguas para ahorrar espacio (Cultura DevOps)
             docker image prune -f
 
       - name: Notify Telegram on Failure
@@ -65,4 +92,4 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
           -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-          -d text="❌ Fallo en el despliegue de Oedon. Revisa los logs en GitHub Actions."
+          -d text="❌ Fallo en el despliegue de Oedon. La puerta no se abrió o el SSH falló."

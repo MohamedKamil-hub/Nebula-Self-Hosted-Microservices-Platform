@@ -1,57 +1,41 @@
 #!/bin/bash
-# Instalación del Portero Digital Oedon
+# OEDON - Master Installer
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ENV_FILE="${SCRIPT_DIR}/.env"
 
-echo "=== Instalando Oedon Portero Digital ==="
+echo "🚀 Starting OEDON Installation..."
 
-# ── Load .env ───────────────────────────────────────────
-[ -f "$ENV_FILE" ] || { echo "[!] .env not found in ${SCRIPT_DIR}"; exit 1; }
-source "$ENV_FILE"
-
-# ── Validate required vars ──────────────────────────────
-if [ -z "${PORTERO_SECRET:-}" ] || [ "$PORTERO_SECRET" = "CHANGE_ME" ]; then
-    echo "[!] PORTERO_SECRET not set or still default in .env"
-    echo "    Generate one: openssl rand -hex 32"
-    exit 1
+# 1. Environment & Secrets
+if [ ! -f "$SCRIPT_DIR/.env" ]; then
+    echo "📝 Creating .env file from template..."
+    cp "$SCRIPT_DIR/.env.example" "$SCRIPT_DIR/.env"
+    bash "$SCRIPT_DIR/scripts/generate-secrets.sh"
 fi
 
+source "$SCRIPT_DIR/.env"
 
+# 2. Dependencies
+echo "🐳 Installing Docker Engine..."
+bash "$SCRIPT_DIR/scripts/01-install-docker.sh"
 
-BASE_DIR=$(pwd)
-ln -sf "../../.env" "${BASE_DIR}/apps/wordpress-app/.env"
-ln -sf "../../.env" "${BASE_DIR}/apps/python-app/.env"
+# 3. CLI Configuration
+echo "🔧 Setting up 'oedon' CLI command..."
+sudo ln -sf "$SCRIPT_DIR/bin/oedon" /usr/local/bin/oedon
+sudo chmod +x "$SCRIPT_DIR/bin/oedon"
 
-PORTERO_UDP_PORT="${PORTERO_UDP_PORT:-62201}"
-SSH_PORT="${SSH_PORT:-2222}"
+# 4. App Symlinks
+echo "🔗 Linking environment files for apps..."
+ln -sf "../../.env" "$SCRIPT_DIR/apps/wordpress-app/.env"
+ln -sf "../../.env" "$SCRIPT_DIR/apps/python-app/.env"
 
-# 1. Copiar script y .env
+# 5. Portero Digital Setup
+echo "🛡️  Configuring Port Knocking Daemon..."
 sudo mkdir -p /opt/oedon-portero
-sudo cp portero.py /opt/oedon-portero/
-sudo cp "$ENV_FILE" /opt/oedon-portero/.env
-sudo chmod 700 /opt/oedon-portero/portero.py
-sudo chmod 600 /opt/oedon-portero/.env
-
-# 2. Instalar servicio systemd
+sudo cp portero.py "$SCRIPT_DIR/.env" /opt/oedon-portero/
 sudo cp oedon-portero.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable oedon-portero
-sudo systemctl restart oedon-portero
+sudo systemctl enable oedon-portero --now
 
-# 3. Abrir puerto UDP del portero en UFW
-sudo ufw allow "${PORTERO_UDP_PORT}/udp" comment "Oedon Portero Knock"
-
-# 4. Asegurar que SSH NO está abierto por defecto
-sudo ufw delete allow "${SSH_PORT}/tcp" 2>/dev/null || true
-
-sudo ufw reload
-
-echo "=== Instalación completa ==="
-echo "  UDP knock port: ${PORTERO_UDP_PORT}"
-echo "  SSH port:       ${SSH_PORT} (closed by default)"
-echo ""
-sudo systemctl status oedon-portero --no-pager
-echo ""
-echo "Logs: sudo journalctl -u oedon-portero -f"
+echo "✅ INSTALLATION COMPLETE."
+echo "Use 'oedon sync' to deploy your apps or 'oedon secure' to lock the server."
