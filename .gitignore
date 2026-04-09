@@ -20,7 +20,12 @@ data/
 __pycache__/
 *.swp
 
-
+# WordPress third-party code (plugins, themes, languages)
+/apps/wordpress-app/wp-content/languages/
+/apps/wordpress-app/wp-content/plugins/
+/apps/wordpress-app/wp-content/themes/
+/apps/wordpress-app/wp-content/upgrade/
+/apps/wordpress-app/wp-content/uploads/
 
 
 # WordPress config with passwords

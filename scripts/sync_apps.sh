@@ -1,64 +1,39 @@
 #!/bin/bash
-# scripts/sync-apps.sh — Oedon App Synchronizer
-# Lee apps.list y aplica la configuración de todas las apps declaradas.
-# Esto es IaC: tu servidor entero está definido en un archivo de texto.
-#
-# Uso: ./scripts/sync-apps.sh [--dry-run]
+# Oedon Sync Engine - Atomic Rollback Version
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 APPS_LIST="${PROJECT_DIR}/apps.list"
 DEPLOY="${SCRIPT_DIR}/deploy.sh"
-DRY_RUN=false
+NGINX_CONF_DIR="${PROJECT_DIR}/config/nginx/sites-enabled"
+TMP_BACKUP="/tmp/oedon_nginx_bak"
 
-[ "${1:-}" = "--dry-run" ] && DRY_RUN=true
+mkdir -p "$TMP_BACKUP"
 
-[ -f "$APPS_LIST" ] || { echo "[!] apps.list no encontrado en ${PROJECT_DIR}"; exit 1; }
-[ -f "$DEPLOY" ]    || { echo "[!] deploy.sh no encontrado en ${SCRIPT_DIR}"; exit 1; }
+echo "🔄 Oedon: Sincronizando estado..."
 
-chmod +x "$DEPLOY"
+# 1. Backup temporal del estado actual estable
+cp "$NGINX_CONF_DIR"/*.conf "$TMP_BACKUP/" 2>/dev/null || true
 
-echo "=== Oedon sync-apps ==="
-[ "$DRY_RUN" = true ] && echo "[i] DRY RUN — no se aplican cambios"
-echo ""
-
-COUNT=0
-ERRORS=0
-
-while IFS= read -r line; do
-    # Ignorar comentarios y líneas vacías (bug fix del original)
-    [[ "$line" =~ ^[[:space:]]*# ]] && continue
-    [[ -z "${line// }" ]] && continue
-
-    # Parsear campos separados por |
-    IFS='|' read -r name port domain <<< "$line"
-
-    # Limpiar espacios
-    name="$(echo "$name" | xargs)"
-    port="$(echo "$port" | xargs)"
-    domain="$(echo "$domain" | xargs)"
-
-    # Validar que los tres campos existen
-    if [ -z "$name" ] || [ -z "$port" ] || [ -z "$domain" ]; then
-        echo "[!] Línea malformada (necesita: nombre | puerto | dominio): '$line'"
-        (( ERRORS++ )) || true
-        continue
-    fi
-
-    if [ "$DRY_RUN" = true ]; then
-        echo "[dry] $name → https://${domain} (puerto ${port})"
-    else
-        echo "[*] Sincronizando: $name"
-        if bash "$DEPLOY" "$name" "$port" "$domain"; then
-            (( COUNT++ )) || true
-        else
-            echo "[!] Error desplegando $name"
-            (( ERRORS++ )) || true
-        fi
-        echo ""
-    fi
-
+# 2. Generar nueva configuración basada en apps.list
+while IFS='|' read -r name port domain || [ -n "$name" ]; do
+    [[ "$name" =~ ^[[:space:]]*# || -z "${name// }" ]] && continue
+    name=$(echo "$name" | xargs); port=$(echo "$port" | xargs); domain=$(echo "$domain" | xargs)
+    
+    bash "$DEPLOY" "$name" "$port" "$domain"
 done < "$APPS_LIST"
 
-echo "=== Sync completado: ${COUNT} apps desplegadas, ${ERRORS} errores ==="
+# 3. Validar INTEGRIDAD antes de aplicar
+if docker exec oedon-proxy nginx -t > /dev/null 2>&1; then
+    docker exec oedon-proxy nginx -s reload
+    echo "✅ Éxito: Infraestructura actualizada y recargada."
+    rm -rf "$TMP_BACKUP"/*
+else
+    echo "❌ ERROR: Configuración inválida detectada. Iniciando Rollback..."
+    rm -rf "$NGINX_CONF_DIR"/*.conf
+    cp "$TMP_BACKUP"/*.conf "$NGINX_CONF_DIR/"
+    docker exec oedon-proxy nginx -s reload
+    echo "⚠️  Atención: Se ha restaurado la última configuración estable."
+    exit 1
+fi

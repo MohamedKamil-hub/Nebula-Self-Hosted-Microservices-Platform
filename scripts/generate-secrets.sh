@@ -23,6 +23,8 @@ replace_secret() {
 
 replace_secret "PORTERO_SECRET"
 replace_secret "OEDON_PUBLIC_KEY"
+replace_secret "MYSQL_ROOT_PASSWORD"
+replace_secret "MYSQL_PASSWORD"
 
 echo ""
 echo "[✓] Secrets check complete. Review your .env:"

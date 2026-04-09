@@ -50,6 +50,35 @@ case "$cmd" in
         grep -v '^#' "$APPS_LIST" | grep '|' || echo "No apps found."
         ;;
 
+
+
+# --- System & Security ---
+    monitor) docker stats ;;
+    
+    security-check)
+        echo "🔒 Checking Firewall Rules..."
+        check_sudo
+        ufw status
+        echo "🛡️ Checking Fail2Ban Status..."
+        fail2ban-client status sshd
+        ;;
+
+    # --- Updates & Cleanup ---
+    update)
+        echo "🔄 Updating Oedon..."
+        git pull origin main
+        bash "${SCRIPTS}/render-nginx.sh"
+        docker compose up -d --build --remove-orphans
+        ;;
+
+    clean)
+        echo "🧹 Cleaning up unused Docker resources..."
+        docker system prune -f
+        ;;
+
+
+
+
     # --- Container Orchestration ---
     up)      docker compose up -d "$@" ;;
     down)    docker compose down "$@" ;;

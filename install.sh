@@ -18,6 +18,12 @@ if [ -z "${PORTERO_SECRET:-}" ] || [ "$PORTERO_SECRET" = "CHANGE_ME" ]; then
     exit 1
 fi
 
+
+
+BASE_DIR=$(pwd)
+ln -sf "../../.env" "${BASE_DIR}/apps/wordpress-app/.env"
+ln -sf "../../.env" "${BASE_DIR}/apps/python-app/.env"
+
 PORTERO_UDP_PORT="${PORTERO_UDP_PORT:-62201}"
 SSH_PORT="${SSH_PORT:-2222}"
 

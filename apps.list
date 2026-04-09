@@ -28,7 +28,7 @@
 # Nombre          | Puerto | Dominio
 # ─────────────────────────────────────────────────────────────────
 oedon-static      | 80     | static.oedon.test
-wordpress-app     | 80   | wordpress.oedon.test
+wordpress-app     | 9000   | wordpress.oedon.test
 python-app        | 5000   | python.oedon.test
 
 # Ejemplos de futuras apps (descomentar cuando estén desplegadas):
