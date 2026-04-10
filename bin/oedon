@@ -1,131 +1,128 @@
 #!/bin/bash
-# Oedon CLI — The Invisible PaaS Control Plane
+# Oedon CLI - The Invisible PaaS Control Plane
 set -euo pipefail
 
-# --- Path Configuration ---
-# Ensures the script knows where the project root is regardless of where it's called from
-BINARY_PATH="$(readlink -f "$0")"
-PROJECT_DIR="$(dirname "$(dirname "$BINARY_PATH")")"
+# Path Configuration
+PROJECT_DIR="${OEDON_PROJECT_DIR:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
 SCRIPTS="${PROJECT_DIR}/scripts"
 APPS_LIST="${PROJECT_DIR}/apps.list"
 
-# Always run from the project root for Docker Compose context
-cd "$PROJECT_DIR"
+# Load UI Colors
+if [ -f "${SCRIPTS}/colors.sh" ]; then
+    source "${SCRIPTS}/colors.sh"
+else
+    BOLD='' NC='' RED='' GREEN='' YELLOW='' BLUE='' CYAN=''
+    OK='[OK]' ERR='[ERR]' INFO='[INFO]' SSL='[SSL]' WARN='[WARN]'
+fi
 
-# --- Helper: Check for sudo ---
-check_sudo() {
-    if [ "$EUID" -ne 0 ]; then
-        echo "🛡️  Oedon: This command requires sudo privileges."
-        exec sudo "$0" "$@"
-    fi
-}
+cd "$PROJECT_DIR"
 
 cmd="${1:-help}"
 [ $# -gt 0 ] && shift
 
 case "$cmd" in
-    # --- Core Declarative Engine ---
     sync)
-        echo "🔄 Syncing infrastructure with apps.list..."
-        check_sudo
+        echo -e "${INFO} Synchronizing infrastructure with application registry..."
         bash "${SCRIPTS}/sync_apps.sh" "$@"
         ;;
-
     add)
-        # Usage: oedon add <name> <port> <domain>
         if [ $# -lt 3 ]; then
-            echo "❌ Error: Missing arguments."
-            echo "Usage: oedon add <name> <port> <domain>"
+            echo -e "${ERR} Missing parameters. Usage: oedon add <name> <port> <domain>"
             exit 1
         fi
-        echo "📝 Adding new app to apps.list..."
+        echo -e "${INFO} Registering new application: $1..."
         echo "$1 | $2 | $3" >> "$APPS_LIST"
-        echo "✅ App added. Running sync..."
-        check_sudo
         bash "${SCRIPTS}/sync_apps.sh"
+        echo -e "   ${OK} Application registered and synced successfully."
         ;;
-
     list)
-        echo "📋 Currently declared applications in apps.list:"
-        grep -v '^#' "$APPS_LIST" | grep '|' || echo "No apps found."
+        echo -e "${BLUE}${BOLD}--- REGISTERED APPLICATIONS ---${NC}"
+        if [ ! -s "$APPS_LIST" ]; then
+            echo "Registry is empty."
+        else
+            grep -v '^#' "$APPS_LIST" | grep '|' || echo "No active entries found."
+        fi
         ;;
+    lockdown)
+        echo -e "${RED}${BOLD}!!! CRITICAL SECURITY ALERT !!!${NC}"
+        echo -e "${YELLOW}Enabling HMAC Port Knocking (Portero Digital).${NC}"
+        echo -e "${YELLOW}SSH access will be hidden from public scans.${NC}"
+        echo ""
+        read -p "Apply stealth mode now? (y/N): " confirm
+        if [[ $confirm == [yY] ]]; then
+            echo -e "${INFO} Installing Portero Digital system service..."
+            sudo ln -sf "${PROJECT_DIR}/internal/portero/oedon-portero.service" /etc/systemd/system/
+            sudo systemctl daemon-reload
+            sudo systemctl enable --now oedon-portero
 
-secure)
-    echo "🔒 Blindando el servidor..."
-    check_sudo
-    bash "${SCRIPTS}/05-setup-firewall.sh"
-    bash "${SCRIPTS}/06-setup-fail2ban.sh"
-    bash "${SCRIPTS}/setup-motd.sh"
-    echo "✅ Servidor fortificado."
-    ;;
+            echo -e "${INFO} Hardening firewall rules..."
+            sudo ufw allow ${PORTERO_UDP_PORT:-62201}/udp
+            sudo ufw deny ${SSH_PORT:-22}/tcp
+            sudo ufw reload
 
-
-
-
-# --- System & Security ---
-    monitor) docker stats ;;
-    
-    security-check)
-        echo "🔒 Checking Firewall Rules..."
-        check_sudo
-        ufw status
-        echo "🛡️ Checking Fail2Ban Status..."
-        fail2ban-client status sshd
+            echo -e "   ${OK} STEALTH MODE IS ACTIVE."
+            echo -e "   ${INFO} Authorized access via 'tools/knock/knock.py' only."
+        else
+            echo -e "${INFO} Lockdown sequence canceled."
+        fi
         ;;
-
-    # --- Updates & Cleanup ---
-    update)
-        echo "🔄 Updating Oedon..."
-        git pull origin main
-        bash "${SCRIPTS}/render-nginx.sh"
-        docker compose up -d --build --remove-orphans
+    secure)
+        echo -e "${INFO} Running system hardening protocols..."
+        bash "${SCRIPTS}/05-setup-firewall.sh"
+        bash "${SCRIPTS}/06-setup-fail2ban.sh"
+        bash "${SCRIPTS}/setup-motd.sh"
+        echo -e "   ${OK} System security updated."
         ;;
-
-    clean)
-        echo "🧹 Cleaning up unused Docker resources..."
-        docker system prune -f
+    backup)
+        echo -e "${INFO} Initializing system backup sequence..."
+        bash "${SCRIPTS}/99-backup.sh"
         ;;
-
-
-
-
-    # --- Container Orchestration ---
-    up)      docker compose up -d "$@" ;;
-    down)    docker compose down "$@" ;;
-    restart) docker compose restart "$@" ;;
-    status)  docker compose ps ;;
-    logs)    docker compose logs -f "$@" ;;
-
-    # --- Maintenance & Tools ---
+    watchdog-test)
+        echo -e "${INFO} Running manual Guardian health check..."
+        bash "${SCRIPTS}/oedon-watchdog.sh"
+        ;;
+    monitor)
+        echo -e "${BLUE}${BOLD}--- GLOBAL OEDON MONITOR ---${NC}"
+        echo -e "${CYAN}Streaming logs (Press Ctrl+C to exit)${NC}\n"
+        sudo tail -f /var/log/oedon/nginx/*.log &
+        docker ps --format "{{.Names}}" | xargs -I {} docker logs -f --tail 5 {} &
+        trap 'kill $(jobs -p)' EXIT
+        wait
+        ;;
+    certs)
+        echo -e "${SSL} Managing SSL certificate lifecycle..."
+        bash "${SCRIPTS}/generate_certs.sh"
+        ;;
+    deploy)
+        bash "${SCRIPTS}/deploy.sh" "$@"
+        ;;
+    up)      echo -e "${INFO} Starting infrastructure..."; docker compose up -d "$@" ;;
+    down)    echo -e "${INFO} Stopping infrastructure..."; docker compose down "$@" ;;
+    restart) echo -e "${INFO} Restarting services..."; docker restart "$@" || docker compose restart "$@" ;;
+    status)  echo -e "${CYAN}${BOLD}--- CONTAINER STATUS ---${NC}"; docker compose ps ;;
+    logs)    echo -e "${INFO} Attaching to container logs..."; docker compose logs -f "$@" ;;
     stats)   bash "${SCRIPTS}/oedon-stats.sh" ;;
-    backup)  bash "${SCRIPTS}/99-backup.sh" ;;
-    
-    # --- Manual Deployment (Legacy/Bypass) ---
-    deploy)  
-        check_sudo
-        bash "${SCRIPTS}/deploy.sh" "$@" 
-        ;;
 
     help|*)
-        echo "🛡️  OEDON OS — Universal PaaS CLI"
-        echo "=================================="
-        echo "Usage: oedon <command> [args]"
+        echo -e "${BLUE}${BOLD}OEDON CONTROL PLANE - Universal PaaS CLI${NC}"
+        echo -e "Usage: sudo oedon <command> [arguments]\n"
+        echo -e "${BOLD}CORE COMMANDS:${NC}"
+        printf "  %-18s %s\n" "deploy" "Full system deployment"
+        printf "  %-18s %s\n" "sync" "Sync registry with Nginx"
+        printf "  %-18s %s\n" "add <n> <p> <d>" "Register and sync new app"
+        printf "  %-18s %s\n" "list" "List registered apps"
+        echo -e "\n${BOLD}OBSERVABILITY:${NC}"
+        printf "  %-18s %s\n" "monitor" "Real-time log stream"
+        printf "  %-18s %s\n" "up / down" "Service lifecycle control"
+        printf "  %-18s %s\n" "restart" "Global container restart"
+        printf "  %-18s %s\n" "status / logs" "Health and stdout monitoring"
+        echo -e "\n${BOLD}SECURITY & MAINTENANCE:${NC}"
+        printf "  %-18s %s\n" "lockdown" "Enable Stealth Mode (Port Knocking)"
+        printf "  %-18s %s\n" "secure" "Apply security hardening"
+        printf "  %-18s %s\n" "backup" "Run automated backup"
+        printf "  %-18s %s\n" "watchdog-test" "Manual health inspection"
+        printf "  %-18s %s\n" "certs" "SSL certificate management"
+        printf "  %-18s %s\n" "stats" "Resource usage statistics"
         echo ""
-        echo "Declarative Commands (Recommended):"
-        echo "  sync          Applies changes from apps.list to Nginx"
-        echo "  add           Adds a new entry to apps.list and syncs"
-        echo "  list          Shows all apps declared in your system"
-        echo ""
-        echo "Infrastructure Control:"
-        echo "  up [svc]      Start services (e.g., oedon up wordpress-app)"
-        echo "  down          Stop and remove all containers"
-        echo "  restart       Restart services"
-        echo "  status        Show container health and ports"
-        echo "  logs [svc]    Follow real-time logs"
-        echo ""
-        echo "System Tools:"
-        echo "  stats         Server resources dashboard"
-        echo "  backup        Execute the backup plan (Cloud/Local)"
-        echo "  deploy        Directly run the proxy deployer"
         ;;
 esac

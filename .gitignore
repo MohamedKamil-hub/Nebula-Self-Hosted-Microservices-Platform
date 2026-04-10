@@ -2,6 +2,12 @@
 .env
 *.env.local
 
+
+.env
+data/
+config/nginx/ssl/*.key
+config/nginx/ssl/*.crt
+
 # Claves SSH y certificados
 *.pem
 *.key

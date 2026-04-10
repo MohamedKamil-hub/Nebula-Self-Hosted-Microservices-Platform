@@ -1,47 +1,31 @@
 #!/bin/bash
-# ./scripts/05-setup-firewall.sh
-# OEDON - Firewall Configuration (Fortress Mode)
-set -euo pipefail
-
+set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-
-# ── Load .env ───────────────────────────────────────────
 [ -f "${PROJECT_DIR}/.env" ] && source "${PROJECT_DIR}/.env"
-
-SSH_PORT="${SSH_PORT:-2222}"
-HTTP_PORT="${HTTP_PORT:-80}"
-HTTPS_PORT="${HTTPS_PORT:-443}"
-PORTERO_UDP_PORT="${PORTERO_UDP_PORT:-62201}"
 
 echo "=== OEDON FIREWALL CONFIGURATION ==="
 
-# 1. Reset and policies
-sudo ufw --force reset
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
+# Disable IPv6 in ufw
+sed -i 's/IPV6=yes/IPV6=no/' /etc/default/ufw 2>/dev/null || true
 
-# 2. Rules from .env
-echo "Configuring rules..."
+ufw --force reset
+ufw default deny incoming
+ufw default allow outgoing
 
-sudo ufw allow "${HTTP_PORT}/tcp" comment 'HTTP'
-sudo ufw allow "${HTTPS_PORT}/tcp" comment 'HTTPS'
-sudo ufw allow "${PORTERO_UDP_PORT}/udp" comment 'Oedon Portero Knock'
+# HTTP and HTTPS only — SSH is the user's responsibility
+ufw allow 80/tcp comment 'HTTP'
+ufw allow 443/tcp comment 'HTTPS'
 
-# SSH is NOT opened — portero handles it dynamically
-# If you need emergency access: sudo ufw allow ${SSH_PORT}/tcp
+# Portero knock port
+ufw allow "${PORTERO_UDP_PORT:-62201}"/udp comment 'Oedon Portero Knock'
+sudo ufw allow ssh
 
-# 3. Activate
-sudo ufw --force enable
+ufw --force enable
+ufw status verbose
 
 echo "------------------------------------------------"
-echo " Firewall configured (Fortress Mode)"
-echo ""
-echo " PORTS OPEN:"
-echo "   ${HTTP_PORT}/tcp   - HTTP"
-echo "   ${HTTPS_PORT}/tcp  - HTTPS"
-echo "   ${PORTERO_UDP_PORT}/udp  - Portero Knock"
-echo ""
+echo " Firewall configured."
+echo " NOTE: SSH port is NOT managed here."
+echo " Add it manually if needed: sudo ufw allow <port>/tcp"
 echo "------------------------------------------------"
-
-sudo ufw status verbose

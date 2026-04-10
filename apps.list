@@ -1,37 +1,37 @@
 # ══════════════════════════════════════════════════════════════════
-# OEDON — Registro Declarativo de Aplicaciones (apps.list)
+# OEDON — Declarative Application Registry (apps.list)
 # ══════════════════════════════════════════════════════════════════
 #
-# Formato: nombre | puerto-interno | dominio
+# Format: name | internal-port | domain
 #
-# Reglas:
-#   - El "nombre" debe coincidir con el nombre del contenedor Docker
-#     (container_name en su docker-compose.yml) y con su posición
-#     en oedon-network. Nginx resuelve el contenedor por ese nombre.
+# Rules:
+#   - The "name" must match the Docker container name
+#     (container_name in its docker-compose.yml) and its position
+#     in oedon-network. Nginx resolves the container by that name.
 #
-#   - El "puerto" es el puerto INTERNO que expone la app dentro de
-#     la red Docker, no al host. No es necesario publicarlo en ports:.
+#   - The "port" is the INTERNAL port that the app exposes within
+#     the Docker network, not to the host. It is not necessary to publish it in ports:.
 #
-#   - El "dominio" puede ser local (*.oedon.test) o real (app.tudominio.com).
+#   - The "domain" can be local (*.oedon.test) or real (app.yourdomain.com).
 #
-# Para aplicar cambios:
+# To apply changes:
 #   ./scripts/sync-apps.sh
 #
-# Para previsualizar sin aplicar:
+# To preview without applying:
 #   ./scripts/sync-apps.sh --dry-run
 #
-# Para desplegar una sola app manualmente:
-#   ./scripts/deploy.sh <nombre> <puerto> <dominio>
+# To deploy a single app manually:
+#   ./scripts/deploy.sh <name> <port> <domain>
 #
 # ══════════════════════════════════════════════════════════════════
 
-# Nombre          | Puerto | Dominio
+# Name             | Port  | Domain
 # ─────────────────────────────────────────────────────────────────
 oedon-static      | 80     | static.oedon.test
 wordpress-app     | 9000   | wordpress.oedon.test
 python-app        | 5000   | python.oedon.test
 
-# Ejemplos de futuras apps (descomentar cuando estén desplegadas):
+# Examples of future apps (uncomment when deployed):
 # pulse           | 8080   | gestion.oedon.test
 # moodle          | 8080   | lms.oedon.test
 # gitea           | 3000   | git.oedon.test
