@@ -69,3 +69,6 @@ digest.txt
 config/nginx/sites-enabled/
 config/nginx/ssl/
 <archivo>
+.env
+data/
+logs/

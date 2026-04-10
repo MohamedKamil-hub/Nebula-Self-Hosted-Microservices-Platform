@@ -1,32 +1,36 @@
 #!/bin/bash
-# oedon-watchdog.sh - Lightweight alert system via Telegram
+# oedon-watchdog.sh - Self-healing & alert system
 # Author: Mohamed Kamil El Kouarti
-# Runs via cron every 5 minutes
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
-# ── Load config from .env ───────────────────────────────
-[ -f "${PROJECT_DIR}/.env" ] || { echo "[!] .env not found"; exit 1; }
-source "${PROJECT_DIR}/.env"
+# Source colors (No emojis here)
+source "${SCRIPT_DIR}/colors.sh"
+
+# Source and export .env
+if [ -f "${PROJECT_DIR}/.env" ]; then
+    set -a
+    source "${PROJECT_DIR}/.env"
+    set +a
+fi
 
 TELEGRAM_TOKEN="${TELEGRAM_TOKEN:-}"
 TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
 
 if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
-    echo "[!] TELEGRAM_TOKEN or TELEGRAM_CHAT_ID not set in .env"
+    echo -e "${ERR} TELEGRAM_TOKEN or TELEGRAM_CHAT_ID not set in .env"
     exit 1
 fi
 
-# ── Thresholds (all from .env) ──────────────────────────
+# Thresholds
 DISK_THRESHOLD="${WATCHDOG_DISK_THRESHOLD:-85}"
 MEM_THRESHOLD="${WATCHDOG_MEM_THRESHOLD:-90}"
 LOAD_THRESHOLD="${WATCHDOG_LOAD_THRESHOLD:-$(nproc)}"
-SSH_PORT="${SSH_PORT:-2222}"
 
-# ── Cooldown (from .env) ────────────────────────────────
+# Cooldown logic
 COOLDOWN_DIR="${WATCHDOG_COOLDOWN_DIR:-/tmp/oedon-watchdog}"
 COOLDOWN_MINUTES="${WATCHDOG_COOLDOWN_MIN:-30}"
 mkdir -p "$COOLDOWN_DIR"
@@ -36,110 +40,77 @@ in_cooldown() {
     local file="${COOLDOWN_DIR}/${key}"
     if [ -f "$file" ]; then
         local age=$(( $(date +%s) - $(stat -c %Y "$file") ))
-        if [ "$age" -lt $((COOLDOWN_MINUTES * 60)) ]; then
-            return 0
-        fi
+        if [ "$age" -lt $((COOLDOWN_MINUTES * 60)) ]; then return 0; fi
     fi
     return 1
 }
 
-set_cooldown() {
-    touch "${COOLDOWN_DIR}/${1}"
-}
+set_cooldown() { touch "${COOLDOWN_DIR}/${1}"; }
 
-# ── Telegram sender ─────────────────────────────────────
 send_alert() {
     local message="$1"
     local key="$2"
-
-    if in_cooldown "$key"; then
-        return
-    fi
-
-    curl -s -X POST \
-        "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-        -d chat_id="${TELEGRAM_CHAT_ID}" \
-        -d parse_mode="Markdown" \
-        -d text="$message" > /dev/null 2>&1
-
+    if in_cooldown "$key"; then return; fi
+    curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+        -d chat_id="${TELEGRAM_CHAT_ID}" -d parse_mode="Markdown" -d text="$message" > /dev/null 2>&1
     set_cooldown "$key"
 }
 
-# ── Hostname ────────────────────────────────────────────
 HOST=$(hostname)
-ALERTS=""
+TELEGRAM_ALERTS=""
+TERMINAL_LOGS=""
+RECOVERY_NEEDED=false
 
-# ── Check 1: Disk usage ────────────────────────────────
+# Check 1: Disk
 DISK_PCT=$(df / | awk 'NR==2{gsub("%",""); print $5}')
 if [ "$DISK_PCT" -ge "$DISK_THRESHOLD" ]; then
-    ALERTS="${ALERTS}🔴 *Disk* at ${DISK_PCT}% (threshold: ${DISK_THRESHOLD}%)\n"
+    TELEGRAM_ALERTS="${TELEGRAM_ALERTS}🔴 *Disk* at ${DISK_PCT}% (limit: ${DISK_THRESHOLD}%)\n"
+    TERMINAL_LOGS="${TERMINAL_LOGS}[DISK] usage: ${DISK_PCT}%\n"
 fi
 
-# ── Check 2: Memory usage ──────────────────────────────
+# Check 2: Memory
 MEM_TOTAL=$(free -m | awk 'NR==2{print $2}')
 MEM_USED=$(free -m  | awk 'NR==2{print $3}')
 MEM_PCT=$(( MEM_USED * 100 / MEM_TOTAL ))
 if [ "$MEM_PCT" -ge "$MEM_THRESHOLD" ]; then
-    ALERTS="${ALERTS}🔴 *Memory* at ${MEM_PCT}% (${MEM_USED}/${MEM_TOTAL} MB)\n"
+    TELEGRAM_ALERTS="${TELEGRAM_ALERTS}🔴 *Memory* at ${MEM_PCT}% (${MEM_USED}/${MEM_TOTAL} MB)\n"
+    TERMINAL_LOGS="${TERMINAL_LOGS}[MEM] usage: ${MEM_PCT}%\n"
 fi
 
-# ── Check 3: Load average ──────────────────────────────
-LOAD_1M=$(awk '{print $1}' /proc/loadavg)
-LOAD_HIGH=$(awk "BEGIN {print ($LOAD_1M >= $LOAD_THRESHOLD) ? 1 : 0}")
-if [ "$LOAD_HIGH" -eq 1 ]; then
-    ALERTS="${ALERTS}🔴 *Load* at ${LOAD_1M} (threshold: ${LOAD_THRESHOLD})\n"
-fi
-
-# ── Check 4: Docker containers down ────────────────────
+# Check 3: Docker Containers (SELF-HEALING)
 if command -v docker &>/dev/null; then
-    EXPECTED_CONTAINERS="${WATCHDOG_CONTAINERS:-}"
-    if [ -z "$EXPECTED_CONTAINERS" ]; then
-        echo "[i] WATCHDOG_CONTAINERS not set — skipping container check"
-    else
-        for container in $EXPECTED_CONTAINERS; do
-            if ! docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
-                ALERTS="${ALERTS}🔴 *Container down:* \`${container}\`\n"
-            fi
-        done
-    fi
-
-    RESTARTING=$(docker ps --filter "status=restarting" --format '{{.Names}}' 2>/dev/null)
-    if [ -n "$RESTARTING" ]; then
-        for c in $RESTARTING; do
-            ALERTS="${ALERTS}🟡 *Restarting:* \`${c}\`\n"
-        done
-    fi
+    EXPECTED_CONTAINERS="${WATCHDOG_CONTAINERS:-oedon-proxy oedon-static wordpress-db wordpress-app python-app}"
+    for container in $EXPECTED_CONTAINERS; do
+        if ! docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
+            TELEGRAM_ALERTS="${TELEGRAM_ALERTS}🔴 *Container Down:* \`${container}\`\n"
+            TERMINAL_LOGS="${TERMINAL_LOGS}[DOWN] ${container}\n"
+            RECOVERY_NEEDED=true
+        fi
+    done
 fi
 
-# ── Check 5: Nginx health ──────────────────────────────
-if docker ps --format '{{.Names}}' | grep -q "oedon-proxy"; then
-    if ! docker exec oedon-proxy nginx -t &>/dev/null; then
-        ALERTS="${ALERTS}🔴 *Nginx config invalid*\n"
-    fi
+# Execution of Recovery
+if [ "$RECOVERY_NEEDED" = true ]; then
+    echo -e "${WARN} Anomalies detected. Starting recovery..."
+    cd "$PROJECT_DIR" && docker compose up -d > /dev/null 2>&1
+    TELEGRAM_ALERTS="${TELEGRAM_ALERTS}⚙️ *Self-healing:* Services restarted.\n"
+    TERMINAL_LOGS="${TERMINAL_LOGS}[INFO] Recovery action executed.\n"
 fi
 
-# ── Check 6: Failed SSH attempts (last 5 min) ──────────
-FAILED_SSH=0
-for log in /var/log/auth.log /var/log/secure; do
-    if [ -f "$log" ]; then
-        FAILED_SSH=$(find "$log" -mmin -5 -exec grep -c "Failed password" {} \; 2>/dev/null || echo 0)
-        break
-    fi
-done
-if [ "$FAILED_SSH" -gt 10 ]; then
-    ALERTS="${ALERTS}🟡 *SSH:* ${FAILED_SSH} failed attempts in last 5 min\n"
-fi
-
-# ── Send alert if any ──────────────────────────────────
-if [ -n "$ALERTS" ]; then
+# Final Reporting
+if [ -n "$TELEGRAM_ALERTS" ]; then
+    # Format for Telegram (With Emojis)
     MESSAGE="⚠️ *OEDON WATCHDOG* — \`${HOST}\`
 
-${ALERTS}
+${TELEGRAM_ALERTS}
 _$(date '+%Y-%m-%d %H:%M:%S')_"
-
-    ALERT_KEY=$(echo "$ALERTS" | md5sum | cut -d' ' -f1)
+    
+    ALERT_KEY=$(echo "$TELEGRAM_ALERTS" | md5sum | cut -d' ' -f1)
     send_alert "$MESSAGE" "$ALERT_KEY"
-    echo "[!] Alert sent to Telegram"
+    
+    # Format for Terminal (No Emojis, Just Colors)
+    echo -e "${ERR} Issues found. Log summary:"
+    echo -e "${TERMINAL_LOGS}"
 else
-    echo "[✓] All checks passed — $(date '+%H:%M:%S')"
+    echo -e "${OK} All checks passed - $(date '+%H:%M:%S')"
 fi

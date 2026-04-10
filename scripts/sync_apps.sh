@@ -9,31 +9,47 @@ DEPLOY="${SCRIPT_DIR}/deploy.sh"
 NGINX_CONF_DIR="${PROJECT_DIR}/config/nginx/sites-enabled"
 TMP_BACKUP="/tmp/oedon_nginx_bak"
 
-mkdir -p "$TMP_BACKUP"
+# Source and export .env
+if [ -f "${PROJECT_DIR}/.env" ]; then
+    set -a
+    source "${PROJECT_DIR}/.env"
+    set +a
+fi
 
-echo "🔄 Oedon: Sincronizando estado..."
+source "${SCRIPT_DIR}/preflight.sh"
+if ! oedon_validate_apps_list; then
+    echo "[ERR] apps.list validation failed. Aborting sync."
+    exit 1
+fi
 
-# 1. Backup temporal del estado actual estable
+mkdir -p "$TMP_BACKUP" "$NGINX_CONF_DIR"
+
+echo "[INFO] Oedon: Synchronizing state..."
+
+# 1. Backup current stable state
 cp "$NGINX_CONF_DIR"/*.conf "$TMP_BACKUP/" 2>/dev/null || true
 
-# 2. Generar nueva configuración basada en apps.list
-while IFS='|' read -r name port domain || [ -n "$name" ]; do
+# 2. Generate new config from apps.list
+while IFS='|' read -r name port subdomain || [ -n "$name" ]; do
     [[ "$name" =~ ^[[:space:]]*# || -z "${name// }" ]] && continue
-    name=$(echo "$name" | xargs); port=$(echo "$port" | xargs); domain=$(echo "$domain" | xargs)
-    
-    bash "$DEPLOY" "$name" "$port" "$domain"
+    name=$(echo "$name" | xargs)
+    port=$(echo "$port" | xargs)
+    subdomain=$(echo "$subdomain" | xargs)
+
+    full_domain="${subdomain}.${DOMAIN}"
+    bash "$DEPLOY" "$name" "$port" "$full_domain"
 done < "$APPS_LIST"
 
-# 3. Validar INTEGRIDAD antes de aplicar
+# 3. Validate before applying
 if docker exec oedon-proxy nginx -t > /dev/null 2>&1; then
     docker exec oedon-proxy nginx -s reload
-    echo "✅ Éxito: Infraestructura actualizada y recargada."
+    echo "[OK] Infrastructure updated and reloaded."
     rm -rf "$TMP_BACKUP"/*
 else
-    echo "❌ ERROR: Configuración inválida detectada. Iniciando Rollback..."
+    echo "[ERR] Invalid configuration detected. Rolling back..."
     rm -rf "$NGINX_CONF_DIR"/*.conf
     cp "$TMP_BACKUP"/*.conf "$NGINX_CONF_DIR/"
     docker exec oedon-proxy nginx -s reload
-    echo "⚠️  Atención: Se ha restaurado la última configuración estable."
+    echo "[WARN] Restored last stable configuration."
     exit 1
 fi

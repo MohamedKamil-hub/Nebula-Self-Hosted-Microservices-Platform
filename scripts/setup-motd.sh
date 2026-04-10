@@ -1,12 +1,12 @@
 #!/bin/bash
-# setup-motd.sh - Instala btop y configura MOTD con oedon-stats
-# Ejecutar como root o con sudo
+# Execute with sudo
 set -euo pipefail
+source "$(dirname "$0")/colors.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATS_SCRIPT="${SCRIPT_DIR}/oedon-stats.sh"
 
-echo "[*] Instalando btop..."
+echo "${INFO} [*] Installing btop monitoring..."
 if command -v apt &>/dev/null; then
     apt update -qq && apt install -y -qq btop
 elif command -v dnf &>/dev/null; then

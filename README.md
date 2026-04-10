@@ -1,8 +1,3 @@
-Here is a completely restructured, professional `README.md` for Oedon. It removes the chaotic mix of Spanish/English, strips out all the emojis as requested, and clearly organizes the workflow from installation to adding a custom service like Moodle alongside your default stack.
-
-You can copy and paste this directly into your `README.md` file.
-
-```markdown
 # Oedon PaaS
 
 The Invisible PaaS Control Plane. Oedon is a lightweight, declarative deployment engine designed to manage Docker containers behind an automated Nginx proxy, fortified with an internal stealth security system.
@@ -114,3 +109,10 @@ To access your server once it is locked down, use the client tools located in `t
    ```
 3. Access your server via SSH normally.
 ```
+sudo bash install.sh     # copies .env template, installs deps
+sudo oedon deploy         # preflight finds CHANGE_ME ->
+                          #   asks "Configure now? (Y/n)" ->
+                          #   DOMAIN: prompts user
+                          #   secrets: auto-generated
+                          #   defaults: applied silently
+                          #   -> deploys

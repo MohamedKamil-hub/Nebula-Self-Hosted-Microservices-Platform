@@ -4,7 +4,7 @@ services:
     container_name: python-app
     restart: unless-stopped
     environment:
-      - OEDON_PUBLIC_KEY=${OEDON_PUBLIC_KEY}
+      - OEDON_PUBLIC_KEY=${OEDON_PUBLIC_KEY:-}
     networks:
       - oedon-network
 

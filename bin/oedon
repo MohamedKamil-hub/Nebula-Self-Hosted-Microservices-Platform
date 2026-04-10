@@ -15,6 +15,16 @@ else
     OK='[OK]' ERR='[ERR]' INFO='[INFO]' SSL='[SSL]' WARN='[WARN]'
 fi
 
+# Source and export .env so child scripts inherit vars (Problem 3)
+if [ -f "${PROJECT_DIR}/.env" ]; then
+    set -a
+    source "${PROJECT_DIR}/.env"
+    set +a
+fi
+
+# Ensure log directory exists
+mkdir -p /var/log/oedon/nginx 2>/dev/null || true
+
 cd "$PROJECT_DIR"
 
 cmd="${1:-help}"
@@ -30,10 +40,48 @@ case "$cmd" in
             echo -e "${ERR} Missing parameters. Usage: oedon add <name> <port> <domain>"
             exit 1
         fi
-        echo -e "${INFO} Registering new application: $1..."
+        echo -e "${INFO} Registering: $1 -> $3.${DOMAIN}"
         echo "$1 | $2 | $3" >> "$APPS_LIST"
         bash "${SCRIPTS}/sync_apps.sh"
-        echo -e "   ${OK} Application registered and synced successfully."
+        echo -e "   ${OK} $3.${DOMAIN} registered and synced."
+        ;;
+    remove)
+        if [ $# -lt 1 ]; then
+            echo -e "${ERR} Missing parameter. Usage: oedon remove <name>"
+            exit 1
+        fi
+        APP_NAME="$1"
+        echo -e "${INFO} Removing application: ${APP_NAME}..."
+
+        # Remove from apps.list
+        if grep -q "^${APP_NAME} " "$APPS_LIST" 2>/dev/null; then
+            sed -i "/^${APP_NAME} /d" "$APPS_LIST"
+            echo -e "   ${OK} Removed from registry."
+        else
+            echo -e "   ${WARN} '${APP_NAME}' not found in apps.list."
+        fi
+
+        # Remove nginx config
+        NGINX_CONF="${PROJECT_DIR}/config/nginx/sites-enabled/${APP_NAME}.conf"
+        if [ -f "$NGINX_CONF" ]; then
+            rm -f "$NGINX_CONF"
+            echo -e "   ${OK} Nginx config removed."
+        fi
+
+        # Stop container if running
+        if docker ps -q --filter "name=^${APP_NAME}$" | grep -q .; then
+            APP_DIR="${PROJECT_DIR}/apps/${APP_NAME}"
+            if [ -f "${APP_DIR}/docker-compose.yml" ] || [ -f "${APP_DIR}/docker-compose.yaml" ]; then
+                docker compose -f "${APP_DIR}"/docker-compose.y* down 2>/dev/null || true
+            else
+                docker stop "${APP_NAME}" 2>/dev/null || true
+            fi
+            echo -e "   ${OK} Container stopped."
+        fi
+
+        # Reload nginx
+        docker exec oedon-proxy nginx -s reload 2>/dev/null || true
+        echo -e "   ${OK} Proxy reloaded."
         ;;
     list)
         echo -e "${BLUE}${BOLD}--- REGISTERED APPLICATIONS ---${NC}"
@@ -42,6 +90,33 @@ case "$cmd" in
         else
             grep -v '^#' "$APPS_LIST" | grep '|' || echo "No active entries found."
         fi
+        ;;
+    health)
+        echo -e "${BLUE}${BOLD}--- CONTAINER HEALTH CHECK ---${NC}"
+        while IFS= read -r line || [ -n "$line" ]; do
+            [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+            name=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1}')
+            port=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+            [[ -z "$name" ]] && continue
+
+            # Check container running
+            if docker ps -q --filter "name=^${name}$" | grep -q .; then
+                # HTTP health probe via docker network
+                HTTP_CODE=$(docker exec oedon-proxy sh -c \
+                    "wget -q -O /dev/null -S --timeout=5 http://${name}:${port}/ 2>&1 | head -1 | awk '{print \$2}'" 2>/dev/null || echo "ERR")
+                if [[ "$HTTP_CODE" =~ ^[23] ]]; then
+                    echo -e "   ${OK} ${name} :${port} -> HTTP ${HTTP_CODE}"
+                else
+                    echo -e "   ${WARN} ${name} :${port} -> HTTP ${HTTP_CODE:-timeout}"
+                fi
+            else
+                echo -e "   ${ERR} ${name} -> container not running"
+            fi
+        done < "$APPS_LIST"
+        ;;
+    rotate)
+        echo -e "${INFO} Entering Secret Rotation Wizard..."
+        bash "${PROJECT_DIR}/scripts/generate-secrets.sh"
         ;;
     lockdown)
         echo -e "${RED}${BOLD}!!! CRITICAL SECURITY ALERT !!!${NC}"
@@ -56,8 +131,8 @@ case "$cmd" in
             sudo systemctl enable --now oedon-portero
 
             echo -e "${INFO} Hardening firewall rules..."
-            sudo ufw allow ${PORTERO_UDP_PORT:-62201}/udp
-            sudo ufw deny ${SSH_PORT:-22}/tcp
+            sudo ufw allow "${PORTERO_UDP_PORT:-62201}"/udp
+            sudo ufw deny "${SSH_PORT:-22}"/tcp
             sudo ufw reload
 
             echo -e "   ${OK} STEALTH MODE IS ACTIVE."
@@ -84,9 +159,9 @@ case "$cmd" in
     monitor)
         echo -e "${BLUE}${BOLD}--- GLOBAL OEDON MONITOR ---${NC}"
         echo -e "${CYAN}Streaming logs (Press Ctrl+C to exit)${NC}\n"
-        sudo tail -f /var/log/oedon/nginx/*.log &
-        docker ps --format "{{.Names}}" | xargs -I {} docker logs -f --tail 5 {} &
-        trap 'kill $(jobs -p)' EXIT
+        sudo tail -f /var/log/oedon/nginx/*.log 2>/dev/null &
+        docker ps --format "{{.Names}}" | xargs -I {} docker logs -f --tail 5 {} 2>/dev/null &
+        trap 'kill $(jobs -p) 2>/dev/null' EXIT
         wait
         ;;
     certs)
@@ -95,6 +170,41 @@ case "$cmd" in
         ;;
     deploy)
         bash "${SCRIPTS}/deploy.sh" "$@"
+        ;;
+    reset)
+        echo -e "${RED}${BOLD}--- OEDON RESET ---${NC}"
+        echo -e "${YELLOW}This will stop all containers, remove cron entries, and clean generated configs.${NC}"
+        read -p "Proceed? (y/N): " confirm
+        if [[ ! $confirm == [yY] ]]; then
+            echo -e "${INFO} Reset canceled."
+            exit 0
+        fi
+
+        echo -e "${INFO} Stopping all containers..."
+        for app_dir in "${PROJECT_DIR}"/apps/*/; do
+            [ -d "$app_dir" ] || continue
+            if [ -f "${app_dir}docker-compose.yml" ] || [ -f "${app_dir}docker-compose.yaml" ]; then
+                docker compose -f "${app_dir}"docker-compose.y* down 2>/dev/null || true
+            fi
+        done
+        docker compose -f "${PROJECT_DIR}/docker-compose.yml" down 2>/dev/null || true
+
+        echo -e "${INFO} Removing cron entries..."
+        crontab -l 2>/dev/null | grep -v "oedon-watchdog.sh" | crontab - 2>/dev/null || true
+
+        echo -e "${INFO} Cleaning generated nginx configs..."
+        rm -f "${PROJECT_DIR}/config/nginx/sites-enabled/"*.conf 2>/dev/null || true
+
+        echo -e "${INFO} Removing SSL certificates..."
+        rm -f "${PROJECT_DIR}/config/nginx/ssl/oedon.crt" "${PROJECT_DIR}/config/nginx/ssl/oedon.key" 2>/dev/null || true
+
+        read -p "Also delete .env? (y/N): " wipe_env
+        if [[ $wipe_env == [yY] ]]; then
+            rm -f "${PROJECT_DIR}/.env"
+            echo -e "   ${OK} .env removed."
+        fi
+
+        echo -e "   ${OK} Reset complete. Run install.sh to start fresh."
         ;;
     up)      echo -e "${INFO} Starting infrastructure..."; docker compose up -d "$@" ;;
     down)    echo -e "${INFO} Stopping infrastructure..."; docker compose down "$@" ;;
@@ -109,10 +219,12 @@ case "$cmd" in
         echo -e "${BOLD}CORE COMMANDS:${NC}"
         printf "  %-18s %s\n" "deploy" "Full system deployment"
         printf "  %-18s %s\n" "sync" "Sync registry with Nginx"
-        printf "  %-18s %s\n" "add <n> <p> <d>" "Register and sync new app"
+        printf "  %-18s %s\n" "add <n> <p> <sub>" "Register app (subdomain auto-resolved)"
+        printf "  %-18s %s\n" "remove <name>" "Unregister and stop an app"
         printf "  %-18s %s\n" "list" "List registered apps"
         echo -e "\n${BOLD}OBSERVABILITY:${NC}"
         printf "  %-18s %s\n" "monitor" "Real-time log stream"
+        printf "  %-18s %s\n" "health" "Per-container HTTP health check"
         printf "  %-18s %s\n" "up / down" "Service lifecycle control"
         printf "  %-18s %s\n" "restart" "Global container restart"
         printf "  %-18s %s\n" "status / logs" "Health and stdout monitoring"
@@ -123,6 +235,8 @@ case "$cmd" in
         printf "  %-18s %s\n" "watchdog-test" "Manual health inspection"
         printf "  %-18s %s\n" "certs" "SSL certificate management"
         printf "  %-18s %s\n" "stats" "Resource usage statistics"
+        printf "  %-18s %s\n" "rotate" "Rotate infrastructure secrets"
+        printf "  %-18s %s\n" "reset" "Tear down everything and clean state"
         echo ""
         ;;
 esac

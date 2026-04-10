@@ -1,37 +1,26 @@
 # ══════════════════════════════════════════════════════════════════
-# OEDON — Declarative Application Registry (apps.list)
+# OEDON -- Declarative Application Registry (apps.list)
 # ══════════════════════════════════════════════════════════════════
 #
-# Format: name | internal-port | domain
+# Format: name | internal-port | subdomain
+#
+# The full domain is built at deploy time: {subdomain}.{DOMAIN}
+# DOMAIN is read from .env (e.g., DOMAIN=paula.test -> static.paula.test)
 #
 # Rules:
-#   - The "name" must match the Docker container name
-#     (container_name in its docker-compose.yml) and its position
-#     in oedon-network. Nginx resolves the container by that name.
-#
-#   - The "port" is the INTERNAL port that the app exposes within
-#     the Docker network, not to the host. It is not necessary to publish it in ports:.
-#
-#   - The "domain" can be local (*.oedon.test) or real (app.yourdomain.com).
-#
-# To apply changes:
-#   ./scripts/sync-apps.sh
-#
-# To preview without applying:
-#   ./scripts/sync-apps.sh --dry-run
-#
-# To deploy a single app manually:
-#   ./scripts/deploy.sh <name> <port> <domain>
+#   - "name" must match the container_name in its docker-compose.yml
+#   - "port" is the INTERNAL port inside oedon-network
+#   - "subdomain" is the prefix only (no dots, no full domain)
 #
 # ══════════════════════════════════════════════════════════════════
 
-# Name             | Port  | Domain
+# Name             | Port  | Subdomain
 # ─────────────────────────────────────────────────────────────────
-oedon-static      | 80     | static.oedon.test
-wordpress-app     | 9000   | wordpress.oedon.test
-python-app        | 5000   | python.oedon.test
+oedon-static      | 80     | static
+wordpress         | 9000   | wordpress
+python-app        | 5000   | python
 
-# Examples of future apps (uncomment when deployed):
-# pulse           | 8080   | gestion.oedon.test
-# moodle          | 8080   | lms.oedon.test
-# gitea           | 3000   | git.oedon.test
+# Examples (uncomment when deployed):
+# moodle          | 8080   | lms
+# gitea           | 3000   | git
+# pulse           | 8080   | gestion

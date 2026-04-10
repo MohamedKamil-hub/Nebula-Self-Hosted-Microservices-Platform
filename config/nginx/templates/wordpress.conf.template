@@ -1,31 +1,22 @@
 server {
-    listen 80;
-    server_name wordpress.${DOMAIN};
-
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
-
-    location / {
-        return 301 https://$host$request_uri;
-    }
-}
-
-server {
     listen 443 ssl;
     server_name wordpress.${DOMAIN};
 
     ssl_certificate /etc/nginx/ssl/oedon.crt;
     ssl_certificate_key /etc/nginx/ssl/oedon.key;
 
-    client_max_body_size 64M;
+    root /var/www/html;
+    index index.php;
 
     location / {
-        proxy_pass http://wordpress-app:80;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_redirect http://wordpress-app/ https://$host/;
+        try_files $uri $uri/ /index.php?$args;
+    }
+
+    location ~ \.php$ {
+        set $upstream wordpress:9000; 
+        include fastcgi_params;
+        fastcgi_pass $upstream;
+        fastcgi_param SCRIPT_FILENAME /var/www/html$fastcgi_script_name;
+        fastcgi_param HTTPS on;
     }
 }

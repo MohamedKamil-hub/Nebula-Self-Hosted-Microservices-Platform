@@ -27,8 +27,7 @@ echo "=== Oedon Backup Engine Starting ==="
 
 # 1. DATABASE BACKUP (Full Compressed Dump)
 echo "[*] Dumping Database: ${MYSQL_DATABASE}..."
-docker exec wordpress-db mysqldump -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" "${MYSQL_DATABASE}" | gzip > "$DB_FILE"
-
+docker exec wordpress-db mysqldump -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" "${MYSQL_DATABASE}" > "${BACKUP_DIR}/db_backup.sql"
 # 2. INFRASTRUCTURE BACKUP (Local Only)
 # Includes config, apps, app.list and secrets. Excludes logs and existing backups.
 echo "[*] Compressing Infrastructure & Configs..."

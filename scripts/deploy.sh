@@ -3,16 +3,40 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-source "${PROJECT_DIR}/.env"
 source "${PROJECT_DIR}/scripts/colors.sh"
+
+# Source and export .env
+if [ -f "${PROJECT_DIR}/.env" ]; then
+    set -a
+    source "${PROJECT_DIR}/.env"
+    set +a
+fi
+
+# Preflight validation
+source "${SCRIPT_DIR}/preflight.sh"
+
+if ! oedon_validate_env; then
+    echo -e "${ERR} Environment validation failed. Aborting deploy."
+    exit 1
+fi
+
+if ! oedon_validate_apps_list; then
+    echo -e "${ERR} apps.list validation failed. Aborting deploy."
+    exit 1
+fi
 
 SITES_DIR="${PROJECT_DIR}/config/nginx/sites-enabled"
 mkdir -p "$SITES_DIR"
+
+# Collect deployed domains for hosts file hint
+DEPLOYED_DOMAINS=()
 
 deploy_app() {
     local APP_NAME=$1
     local APP_PORT=$2
     local APP_DOMAIN=$3
+
+    DEPLOYED_DOMAINS+=("$APP_DOMAIN")
 
     if [ "$APP_PORT" = "9000" ]; then
         PROXY_CONFIG="
@@ -59,6 +83,12 @@ NGINX
     echo -e "   ${OK} ${APP_DOMAIN} configured"
 }
 
+# Resolve full domain from subdomain field
+resolve_domain() {
+    local subdomain="$1"
+    echo "${subdomain}.${DOMAIN}"
+}
+
 if [ $# -eq 0 ]; then
     if [ ! -f "${PROJECT_DIR}/apps.list" ]; then
         echo -e "${ERR} apps.list not found."
@@ -70,34 +100,30 @@ if [ $# -eq 0 ]; then
     mkdir -p "$SSL_DIR"
 
     if [ ! -f "${SSL_DIR}/oedon.crt" ] || [ ! -f "${SSL_DIR}/oedon.key" ]; then
-        echo -e "${SSL} ${BOLD}Certificate missing. Initializing SSL provision...${NC}"
+        echo -e "${SSL} ${BOLD}Certificate missing. Provisioning SSL...${NC}"
 
-        if [[ "${DOMAIN:-oedon.test}" == *".test" ]] || [[ "${DOMAIN:-oedon.test}" == "localhost" ]]; then
+        if [ "${APP_ENV:-local}" = "local" ]; then
             if command -v mkcert >/dev/null 2>&1; then
                 echo -e "   ${INFO} Using mkcert for local trusted infrastructure..."
                 mkcert -cert-file "${SSL_DIR}/oedon.crt" \
                        -key-file "${SSL_DIR}/oedon.key" \
                        "${DOMAIN}" "*.${DOMAIN}" "localhost" "127.0.0.1" >/dev/null 2>&1
-                
+
                 echo -e "   ${OK} Trusted local certificate generated."
-                
-                # --- MANDATORY WINDOWS WARNING ---
                 echo -e "\n${WARN} ${BOLD}${YELLOW}ACTION REQUIRED: BROWSER TRUST${NC}"
-                echo -e "${YELLOW}   To enable the green lock (HTTPS) in your browser, you must trust the CA:${NC}"
-                echo -e "   1. Find the CA path: ${BOLD}mkcert -CAROOT${NC}"
-                echo -e "   2. Copy ${BOLD}rootCA.pem${NC} to your Windows host."
-                echo -e "   3. Install it in ${CYAN}'Trusted Root Certification Authorities'${NC}.\n"
+                echo -e "${YELLOW}   Copy the Root CA to your host: mkcert -CAROOT${NC}"
+                echo -e "   Install it in 'Trusted Root Certification Authorities'.\n"
             else
-                echo -e "   ${WARN} mkcert not found — falling back to self-signed OpenSSL"
+                echo -e "   ${WARN} mkcert not found. Falling back to self-signed OpenSSL."
                 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
                     -keyout "${SSL_DIR}/oedon.key" \
                     -out "${SSL_DIR}/oedon.crt" \
-                    -subj "/CN=${DOMAIN:-oedon.test}/O=Oedon/C=ES" 2>/dev/null
+                    -subj "/CN=${DOMAIN}/O=Oedon/C=ES" 2>/dev/null
                 echo -e "   ${OK} Self-signed certificate generated (Untrusted)."
             fi
         else
-            echo -e "   ${INFO} Production domain detected. Running Certbot..."
-            bash "${SCRIPT_DIR}/generate_certs.sh"
+            echo -e "   ${INFO} Production mode. Running Certbot..."
+            bash "${SCRIPT_DIR}/oedon-certbot.sh"
         fi
 
         chmod 644 "${SSL_DIR}/oedon.crt"
@@ -107,12 +133,14 @@ if [ $# -eq 0 ]; then
     # Step 1: Nginx Configuration
     echo -e "${BLUE}${BOLD}--- CONFIGURING VHOSTS ---${NC}"
     while IFS= read -r line || [ -n "$line" ]; do
-        [[ -z "$line" || "$line" =~ ^# ]] && continue
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
         name=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1}')
         port=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
-        domain=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
-        [[ -z "$name" || -z "$port" || -z "$domain" ]] && continue
-        deploy_app "$name" "$port" "$domain"
+        subdomain=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
+        [[ -z "$name" || -z "$port" || -z "$subdomain" ]] && continue
+
+        full_domain=$(resolve_domain "$subdomain")
+        deploy_app "$name" "$port" "$full_domain"
     done < "${PROJECT_DIR}/apps.list"
 
     # Step 2: Network
@@ -128,11 +156,13 @@ if [ $# -eq 0 ]; then
     echo -e "\n${BLUE}${BOLD}--- STARTING SERVICES ---${NC}"
     docker compose -f "${PROJECT_DIR}/docker-compose.yml" up -d
 
-    # Step 4: Applications
+    # Step 4: Deploy apps
     for app_dir in "${PROJECT_DIR}"/apps/*/; do
         [ -d "$app_dir" ] || continue
         APP_NAME=$(basename "$app_dir")
-        
+
+        [ -L "${app_dir}.env" ] || ln -sf "../../.env" "${app_dir}.env"
+
         if [ -f "${app_dir}docker-compose.yml" ] || [ -f "${app_dir}docker-compose.yaml" ]; then
             echo -e "   ${INFO} Deploying app: ${BOLD}${APP_NAME}${NC}"
             docker compose -f "${app_dir}"docker-compose.y* up -d
@@ -151,10 +181,25 @@ if [ $# -eq 0 ]; then
     # Step 6: Status
     echo -e "\n${CYAN}${BOLD}DEPLOYMENT SUMMARY:${NC}"
     docker compose -f "${PROJECT_DIR}/docker-compose.yml" ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
-
     echo -e "\n${GREEN}${BOLD}[SUCCESS] Infrastructure is up and running.${NC}"
 
+    # Step 7: Local environment hosts hint
+    if [ "${APP_ENV:-local}" = "local" ] && [ ${#DEPLOYED_DOMAINS[@]} -gt 0 ]; then
+        # Detect server IP
+        SERVER_IP=$(hostname -I | awk '{print $1}')
+
+        echo -e "\n${YELLOW}${BOLD}--- LOCAL ENVIRONMENT: HOSTS FILE ---${NC}"
+        echo -e "${YELLOW}Add these lines to your hosts file to access your sites:${NC}"
+        echo -e "${CYAN}   Windows: C:\\Windows\\System32\\drivers\\etc\\hosts${NC}"
+        echo -e "${CYAN}   Linux/Mac: /etc/hosts${NC}\n"
+        for domain in "${DEPLOYED_DOMAINS[@]}"; do
+            echo -e "   ${SERVER_IP}    ${domain}"
+        done
+        echo ""
+    fi
+
 elif [ $# -eq 3 ]; then
+    # Direct call: deploy_app name port full_domain
     deploy_app "$1" "$2" "$3"
 else
     echo -e "${ERR} Usage: oedon deploy"

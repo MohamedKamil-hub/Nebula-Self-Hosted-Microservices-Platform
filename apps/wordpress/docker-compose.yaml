@@ -1,7 +1,7 @@
 services:
   wordpress:
     image: wordpress:php8.2-fpm-alpine
-    container_name: wordpress-app
+    container_name: wordpress
     restart: unless-stopped
     deploy:
       resources:
