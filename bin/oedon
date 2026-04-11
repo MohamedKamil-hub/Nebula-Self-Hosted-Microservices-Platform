@@ -172,7 +172,7 @@ EOF
             echo -e "\n${CYAN}${BOLD}--- HOW TO USE YOUR KEY ---${NC}"
             echo -e "1. Download/Copy ${BOLD}knock_client.py${NC} to your PC."
             echo -e "2. Run this exact command on your local terminal:"
-            echo -e "   ${GREEN}python knock_client.py${NC}"
+            echo -e "   ${GREEN}python knock_client.py   python knock_client.py; ssh user@serverIP${NC}"
             echo -e "${CYAN}----------------------------${NC}"
         else
             echo -e "${INFO} Lockdown sequence canceled."

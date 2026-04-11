@@ -1,4 +1,4 @@
-k#!/bin/bash
+#!/bin/bash
 # setup-oedon.sh - Professional System Check for Oedon OS
 set -euo pipefail
 
