@@ -39,6 +39,15 @@ echo -e "   ${OK} Watchdog registered in crontab."
 echo -e "\n${BLUE}${BOLD}STEP 2: SYSTEM DEPENDENCIES${NC}"
 echo -e "   ${INFO} Installing Docker Engine..."
 bash "$SCRIPT_DIR/scripts/01-install-docker.sh"
+usermod -aG docker "${REAL_USER}"
+
+if [ -S /var/run/docker.sock ]; then
+    chown root:docker /var/run/docker.sock
+    setfacl -m "u:${REAL_USER}:rw" /var/run/docker.sock || chmod 666 /var/run/docker.sock
+fi
+
+echo -e "   ${OK} Docker group assigned and socket permissions granted."
+
 
 echo -e "   ${INFO} Installing security tools (Fail2Ban, UFW)..."
 apt-get update -qq

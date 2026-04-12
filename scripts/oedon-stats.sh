@@ -149,13 +149,29 @@ fi
 separator
 echo -e "${W} SSH${NC}      ${FAILED_SSH} failed login attempts (last 24h)"
 
-if [ -d "$SITES_DIR" ] && [ "$(ls -A "$SITES_DIR" 2>/dev/null)" ]; then
+APPS_FILE="${PROJECT_DIR}/apps.list"
+if [ -f "$APPS_FILE" ]; then
     echo ""
     echo -e "${W} SITES${NC}"
-    ls -1 "$SITES_DIR" | sed 's/\.conf$//' | while read -r site; do
-        echo -e "  ${G}🌐${NC} https://${site}.${DOMAIN}"
-    done
+    
+    # Leemos el archivo línea por línea de forma nativa (sin tuberías)
+    while IFS='|' read -r name port subdomain; do
+        # 1. Limpiamos espacios usando tr
+        name=$(echo "$name" | tr -d ' ' 2>/dev/null || true)
+        subdomain=$(echo "$subdomain" | tr -d ' ' 2>/dev/null || true)
+        
+        # 2. Si la línea está vacía o es un comentario (#), pasamos a la siguiente
+        if [[ -z "$name" ]] || [[ "$name" == \#* ]]; then
+            continue
+        fi
+        
+        # 3. Si hay subdominio, lo imprimimos
+        if [[ -n "$subdomain" ]]; then
+            echo -e "  ${G}🌐${NC} https://${subdomain}.${DOMAIN}"
+        fi
+    done < "$APPS_FILE"
 fi
+
 
 echo -e "
 ${DIM}  btop for interactive monitoring${NC}

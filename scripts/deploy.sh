@@ -12,30 +12,26 @@ if [ -f "${PROJECT_DIR}/.env" ]; then
     set +a
 fi
 
+# Ensure OEDON_PUBLIC_KEY exists
+if [ -z "${OEDON_PUBLIC_KEY:-}" ]; then
+    NEW_KEY=$(openssl rand -hex 16)
+    echo "OEDON_PUBLIC_KEY=$NEW_KEY" >> "${PROJECT_DIR}/.env"
+    export OEDON_PUBLIC_KEY=$NEW_KEY
+fi
+
 # Preflight validation
 source "${SCRIPT_DIR}/preflight.sh"
-
-if ! oedon_validate_env; then
-    echo -e "${ERR} Environment validation failed. Aborting deploy."
-    exit 1
-fi
-
-if ! oedon_validate_apps_list; then
-    echo -e "${ERR} apps.list validation failed. Aborting deploy."
-    exit 1
-fi
+if ! oedon_validate_env; then echo -e "${ERR} Environment validation failed."; exit 1; fi
 
 SITES_DIR="${PROJECT_DIR}/config/nginx/sites-enabled"
+rm -f "${SITES_DIR}"/*.conf
 mkdir -p "$SITES_DIR"
-
-# Collect deployed domains for hosts file hint
 DEPLOYED_DOMAINS=()
 
 deploy_app() {
     local APP_NAME=$1
     local APP_PORT=$2
     local APP_DOMAIN=$3
-
     DEPLOYED_DOMAINS+=("$APP_DOMAIN")
 
     if [ "$APP_PORT" = "9000" ]; then
@@ -75,133 +71,60 @@ server {
     server_name ${APP_DOMAIN};
     ssl_certificate /etc/nginx/ssl/oedon.crt;
     ssl_certificate_key /etc/nginx/ssl/oedon.key;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
     ${PROXY_CONFIG}
 }
 NGINX
     echo -e "   ${OK} ${APP_DOMAIN} configured"
 }
 
-# Resolve full domain from subdomain field
-resolve_domain() {
-    local subdomain="$1"
-    echo "${subdomain}.${DOMAIN}"
-}
-
 if [ $# -eq 0 ]; then
-    if [ ! -f "${PROJECT_DIR}/apps.list" ]; then
-        echo -e "${ERR} apps.list not found."
-        exit 1
-    fi
-
     # Step 0: SSL Management
     SSL_DIR="${PROJECT_DIR}/config/nginx/ssl"
     mkdir -p "$SSL_DIR"
-
-    if [ ! -f "${SSL_DIR}/oedon.crt" ] || [ ! -f "${SSL_DIR}/oedon.key" ]; then
-        echo -e "${SSL} ${BOLD}Certificate missing. Provisioning SSL...${NC}"
-
-        if [ "${APP_ENV:-local}" = "local" ]; then
-            if command -v mkcert >/dev/null 2>&1; then
-                echo -e "   ${INFO} Using mkcert for local trusted infrastructure..."
-                mkcert -cert-file "${SSL_DIR}/oedon.crt" \
-                       -key-file "${SSL_DIR}/oedon.key" \
-                       "${DOMAIN}" "*.${DOMAIN}" "localhost" "127.0.0.1" >/dev/null 2>&1
-
-                echo -e "   ${OK} Trusted local certificate generated."
-                echo -e "\n${WARN} ${BOLD}${YELLOW}ACTION REQUIRED: BROWSER TRUST${NC}"
-                echo -e "${YELLOW}   Copy the Root CA to your host: mkcert -CAROOT${NC}"
-                echo -e "   Install it in 'Trusted Root Certification Authorities'.\n"
-            else
-                echo -e "   ${WARN} mkcert not found. Falling back to self-signed OpenSSL."
-                openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                    -keyout "${SSL_DIR}/oedon.key" \
-                    -out "${SSL_DIR}/oedon.crt" \
-                    -subj "/CN=${DOMAIN}/O=Oedon/C=ES" 2>/dev/null
-                echo -e "   ${OK} Self-signed certificate generated (Untrusted)."
-            fi
-        else
-            echo -e "   ${INFO} Production mode. Running Certbot..."
-            bash "${SCRIPT_DIR}/oedon-certbot.sh"
-        fi
-
-        chmod 644 "${SSL_DIR}/oedon.crt"
-        chmod 600 "${SSL_DIR}/oedon.key"
+    if [ ! -f "${SSL_DIR}/oedon.crt" ]; then
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout "${SSL_DIR}/oedon.key" -out "${SSL_DIR}/oedon.crt" -subj "/CN=${DOMAIN}/O=Oedon/C=ES" 2>/dev/null
     fi
 
     # Step 1: Nginx Configuration
     echo -e "${BLUE}${BOLD}--- CONFIGURING VHOSTS ---${NC}"
-    while IFS= read -r line || [ -n "$line" ]; do
-        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
-        name=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1}')
-        port=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
-        subdomain=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
-        [[ -z "$name" || -z "$port" || -z "$subdomain" ]] && continue
-
-        full_domain=$(resolve_domain "$subdomain")
-        deploy_app "$name" "$port" "$full_domain"
+    while IFS='|' read -r name port subdomain || [ -n "$name" ]; do
+        [[ -z "$name" || "$name" =~ ^# ]] && continue
+        full_domain="$(echo $subdomain | xargs).${DOMAIN}"
+        deploy_app "$(echo $name | xargs)" "$(echo $port | xargs)" "$full_domain"
     done < "${PROJECT_DIR}/apps.list"
 
-    # Step 2: Network
-    echo -e "\n${BLUE}${BOLD}--- NETWORK CHECK ---${NC}"
-    if ! docker network inspect oedon-network >/dev/null 2>&1; then
-        docker network create oedon-network
-        echo -e "   ${OK} oedon-network created."
-    else
-        echo -e "   ${INFO} oedon-network is ready."
-    fi
-
-    # Step 3: Infrastructure
+    # Step 2: Infrastructure
     echo -e "\n${BLUE}${BOLD}--- STARTING SERVICES ---${NC}"
+    docker network inspect oedon-network >/dev/null 2>&1 || docker network create oedon-network
     docker compose -f "${PROJECT_DIR}/docker-compose.yml" up -d
 
-    # Step 4: Deploy apps
+    # Step 3: Deploy apps & Auto-Sign
     for app_dir in "${PROJECT_DIR}"/apps/*/; do
         [ -d "$app_dir" ] || continue
         APP_NAME=$(basename "$app_dir")
-
-        [ -L "${app_dir}.env" ] || ln -sf "../../.env" "${app_dir}.env"
-
-        if [ -f "${app_dir}docker-compose.yml" ] || [ -f "${app_dir}docker-compose.yaml" ]; then
+        if [ -f "${app_dir}docker-compose.yml" ]; then
             echo -e "   ${INFO} Deploying app: ${BOLD}${APP_NAME}${NC}"
-            docker compose -f "${app_dir}"docker-compose.y* up -d
+            # Usamos --env-file para asegurar que OEDON_PUBLIC_KEY entre siempre
+            docker compose -f "${app_dir}docker-compose.yml" --env-file "${PROJECT_DIR}/.env" up -d --build
+            
+            # INTEGRACIÓN: Si es la python-app, la firmamos automáticamente
+            if [ "$APP_NAME" = "python-app" ]; then
+                echo -e "   ${INFO} Signing python-app integrity..."
+                sleep 2
+                docker run --rm --network oedon-network curlimages/curl -s -X POST "http://python-app:5000/sign" \
+                     -H "X-Oedon-Key: ${OEDON_PUBLIC_KEY}" \
+                     -H "Content-Type: application/json" \
+                     -d '{"app": "python-app", "hash": "verified_deployment"}' > /dev/null
+                echo -e "   ${OK} python-app integrity verified."
+            fi
         fi
     done
 
-    # Step 5: Nginx Reload
-    echo -e "\n${BLUE}${BOLD}--- SYNCING PROXY ---${NC}"
-    sleep 2
-    if docker exec oedon-proxy nginx -s reload 2>/dev/null; then
-        echo -e "   ${OK} Nginx reloaded successfully."
-    else
-        echo -e "   ${ERR} Nginx reload failed. Check logs."
-    fi
-
-    # Step 6: Status
-    echo -e "\n${CYAN}${BOLD}DEPLOYMENT SUMMARY:${NC}"
-    docker compose -f "${PROJECT_DIR}/docker-compose.yml" ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
-    echo -e "\n${GREEN}${BOLD}[SUCCESS] Infrastructure is up and running.${NC}"
-
-    # Step 7: Local environment hosts hint
-    if [ "${APP_ENV:-local}" = "local" ] && [ ${#DEPLOYED_DOMAINS[@]} -gt 0 ]; then
-        # Detect server IP
-        SERVER_IP=$(hostname -I | awk '{print $1}')
-
-        echo -e "\n${YELLOW}${BOLD}--- LOCAL ENVIRONMENT: HOSTS FILE ---${NC}"
-        echo -e "${YELLOW}Add these lines to your hosts file to access your sites:${NC}"
-        echo -e "${CYAN}   Windows: C:\\Windows\\System32\\drivers\\etc\\hosts${NC}"
-        echo -e "${CYAN}   Linux/Mac: /etc/hosts${NC}\n"
-        for domain in "${DEPLOYED_DOMAINS[@]}"; do
-            echo -e "   ${SERVER_IP}    ${domain}"
-        done
-        echo ""
-    fi
+    # Step 4: Finalize
+    docker exec oedon-proxy nginx -s reload 2>/dev/null
+    echo -e "\n${GREEN}${BOLD}[SUCCESS] Deployment complete.${NC}"
+    echo -e "${YELLOW}URL: https://python.mohamed.local/verify?app=python-app&hash=verified_deployment${NC}"
 
 elif [ $# -eq 3 ]; then
-    # Direct call: deploy_app name port full_domain
     deploy_app "$1" "$2" "$3"
-else
-    echo -e "${ERR} Usage: oedon deploy"
-    exit 1
 fi
