@@ -25,7 +25,7 @@ bantime  = 3600
 findtime = 600
 maxretry = 5
 ignoreip = 127.0.0.1/8
-banaction = ufw
+banaction = docker-ufw
 
 [sshd]
 enabled = true
