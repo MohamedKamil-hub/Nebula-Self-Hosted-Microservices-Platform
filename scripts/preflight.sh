@@ -31,6 +31,12 @@ oedon_validate_env() {
         MYSQL_PASSWORD
     )
 
+    # CERTBOT_EMAIL is mandatory in production – Let's Encrypt requires a
+    # valid contact address and will refuse to issue a cert without one.
+    if [ "${APP_ENV:-}" = "production" ]; then
+        REQUIRED_KEYS+=(CERTBOT_EMAIL)
+    fi
+
     local PENDING=()
     for key in "${REQUIRED_KEYS[@]}"; do
         local val="${!key:-}"
@@ -46,6 +52,16 @@ oedon_validate_env() {
     echo ""
     echo "[WARN] Found ${#PENDING[@]} unconfigured key(s): ${PENDING[*]}"
     echo ""
+
+    # Give a clear hint when the only missing thing is CERTBOT_EMAIL
+    for key in "${PENDING[@]}"; do
+        if [ "$key" = "CERTBOT_EMAIL" ]; then
+            echo "[INFO] APP_ENV=production requires CERTBOT_EMAIL."
+            echo "       Add it to .env:  CERTBOT_EMAIL=you@example.com"
+            echo "       Let's Encrypt needs a real address for expiry notices."
+            echo ""
+        fi
+    done
 
     if [ -t 0 ]; then
         read -p "Configure now? (Y/n): " confirm
@@ -111,7 +127,6 @@ oedon_validate_apps_list() {
             FAILED=1
         fi
 
-        # Subdomain should not contain dots (full domains are built at runtime)
         if [[ "$subdomain" == *.* ]]; then
             echo "[WARN] apps.list line ${LINE_NUM}: '${subdomain}' looks like a full domain. Use subdomain only (e.g., 'static' not 'static.oedon.test')"
         fi

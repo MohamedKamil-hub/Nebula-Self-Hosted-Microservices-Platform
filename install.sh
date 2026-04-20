@@ -56,6 +56,7 @@ apt_retry_update() {
     return 1
 }
 
+apt-get install -y cron
 # 1. Environment template only
 echo -e "\n${BLUE}${BOLD}STEP 1: ENVIRONMENT SETUP${NC}"
 if [ ! -f "$SCRIPT_DIR/.env" ]; then
@@ -82,7 +83,7 @@ apt_retry_update || {
 if ! apt-get install -y ca-certificates curl gnupg lsb-release acl fail2ban ufw libnss3-tools; then
     echo -e "   ${ERR} Failed to install system dependencies. Trying to fix broken packages..."
     apt-get install -f -y
-    apt-get install -y ca-certificates curl gnupg lsb-release acl fail2ban ufw libnss3-tools || {
+    apt-get install -y ca-certificates curl gnupg lsb-release acl fail2ban ufw libnss3-tools cron || {
         echo -e "   ${ERR} Could not install required packages. Exiting."
         exit 1
     }
